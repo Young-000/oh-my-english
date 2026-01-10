@@ -1,0 +1,196 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string
+          email: string | null
+          display_name: string | null
+          settings: {
+            dailyGoal: number
+            preferredStyle: 'casual' | 'neutral' | 'formal'
+            notificationEnabled: boolean
+          }
+          created_at: string
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          display_name?: string | null
+          settings?: {
+            dailyGoal?: number
+            preferredStyle?: 'casual' | 'neutral' | 'formal'
+            notificationEnabled?: boolean
+          }
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          display_name?: string | null
+          settings?: {
+            dailyGoal?: number
+            preferredStyle?: 'casual' | 'neutral' | 'formal'
+            notificationEnabled?: boolean
+          }
+          created_at?: string
+        }
+      }
+      learning_records: {
+        Row: {
+          id: string
+          user_id: string
+          korean_input: string
+          english_expression: string
+          context_explanation: string | null
+          alternatives: Array<{
+            expression: string
+            situation: string
+            difference: string
+          }>
+          related_vocabulary: Array<{
+            word: string
+            meaning: string
+            partOfSpeech: string
+            exampleSentence: string
+          }>
+          category: string
+          is_bookmarked: boolean
+          mastery_level: number
+          review_count: number
+          next_review_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          korean_input: string
+          english_expression: string
+          context_explanation?: string | null
+          alternatives?: Array<{
+            expression: string
+            situation: string
+            difference: string
+          }>
+          related_vocabulary?: Array<{
+            word: string
+            meaning: string
+            partOfSpeech: string
+            exampleSentence: string
+          }>
+          category?: string
+          is_bookmarked?: boolean
+          mastery_level?: number
+          review_count?: number
+          next_review_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          korean_input?: string
+          english_expression?: string
+          context_explanation?: string | null
+          alternatives?: Array<{
+            expression: string
+            situation: string
+            difference: string
+          }>
+          related_vocabulary?: Array<{
+            word: string
+            meaning: string
+            partOfSpeech: string
+            exampleSentence: string
+          }>
+          category?: string
+          is_bookmarked?: boolean
+          mastery_level?: number
+          review_count?: number
+          next_review_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      quiz_attempts: {
+        Row: {
+          id: string
+          user_id: string
+          record_id: string
+          quiz_type: 'korean_to_english' | 'fill_blank' | 'multiple_choice'
+          question: string
+          user_answer: string | null
+          correct_answer: string
+          is_correct: boolean
+          time_taken_ms: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          record_id: string
+          quiz_type: 'korean_to_english' | 'fill_blank' | 'multiple_choice'
+          question: string
+          user_answer?: string | null
+          correct_answer: string
+          is_correct: boolean
+          time_taken_ms?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          record_id?: string
+          quiz_type?: 'korean_to_english' | 'fill_blank' | 'multiple_choice'
+          question?: string
+          user_answer?: string | null
+          correct_answer?: string
+          is_correct?: boolean
+          time_taken_ms?: number | null
+          created_at?: string
+        }
+      }
+      daily_stats: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          expressions_learned: number
+          quiz_correct: number
+          quiz_total: number
+          streak_days: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          expressions_learned?: number
+          quiz_correct?: number
+          quiz_total?: number
+          streak_days?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          expressions_learned?: number
+          quiz_correct?: number
+          quiz_total?: number
+          streak_days?: number
+          created_at?: string
+        }
+      }
+    }
+  }
+}

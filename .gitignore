@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Playwright
+/playwright-report/
+/test-results/
+/.playwright-mcp/
+
+# MCP config (local)
+.mcp.json
+
+# E2E test artifacts
+/e2e/.cache/

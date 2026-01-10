@@ -1,65 +1,182 @@
-import Image from "next/image";
+'use client'
+
+import { useState } from 'react'
+import { TranslationInput, type TranslationContext } from '@/presentation/components/TranslationInput'
+import { TranslationResultCard } from '@/presentation/components/TranslationResult'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Sparkles, BookOpen, History, Brain, AlertCircle } from 'lucide-react'
+import type { TranslationResult, LearningRecord } from '@/domain/entities/translation'
+
+interface TranslationResponse {
+  translationResult: TranslationResult
+  learningRecord: LearningRecord
+}
 
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [result, setResult] = useState<TranslationResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isMockMode, setIsMockMode] = useState(false)
+
+  const handleSubmit = async (koreanInput: string, context: TranslationContext) => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          koreanInput,
+          target: context.target,
+          situation: context.situation,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Translation failed')
+      }
+
+      const data = await response.json()
+      setResult(data)
+      setIsMockMode(data.isMock || false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleBookmark = async () => {
+    if (!result) return
+    // TODO: Implement bookmark toggle
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      <div className="container max-w-2xl mx-auto px-4 py-6">
+        {/* Header */}
+        <header className="text-center mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Oh My English!
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-muted-foreground mt-1 text-sm">
+            한국어를 입력하면 상황에 맞는 자연스러운 영어를 알려드려요
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        </header>
+
+        {/* Input - 상단 배치 */}
+        <Card className="mb-6 shadow-lg border-primary/20">
+          <CardContent className="pt-6">
+            <TranslationInput onSubmit={handleSubmit} isLoading={isLoading} />
+          </CardContent>
+        </Card>
+
+        {/* Mock Mode 알림 */}
+        {isMockMode && result && (
+          <div className="mb-4 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-4 py-2 rounded-lg border border-amber-200">
+            <AlertCircle className="h-4 w-4" />
+            <span>테스트 모드: 실제 API 연결 시 더 정확한 결과를 받을 수 있어요</span>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <Card className="mb-6 border-destructive bg-destructive/10">
+            <CardContent className="p-4">
+              <p className="text-destructive text-sm">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <div className="animate-pulse space-y-4 w-full">
+              <div className="h-32 bg-muted rounded-lg" />
+              <div className="h-24 bg-muted rounded-lg" />
+              <div className="h-24 bg-muted rounded-lg" />
+            </div>
+            <p className="mt-4 text-sm">번역 중...</p>
+          </div>
+        )}
+
+        {/* Result */}
+        {result && !isLoading && (
+          <TranslationResultCard
+            result={result.translationResult}
+            record={result.learningRecord}
+            onBookmark={handleBookmark}
+          />
+        )}
+
+        {/* Features (결과 없을 때만 표시) */}
+        {!result && !isLoading && (
+          <div className="mt-8">
+            <h2 className="text-sm font-medium text-muted-foreground mb-3 text-center">
+              이런 것들을 도와드려요
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h3 className="font-medium text-sm">자연스러운 표현</h3>
+                    <p className="text-xs text-muted-foreground">원어민이 실제로 쓰는 표현</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <BookOpen className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h3 className="font-medium text-sm">상황별 뉘앙스</h3>
+                    <p className="text-xs text-muted-foreground">대상과 상황에 맞는 표현</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <History className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h3 className="font-medium text-sm">학습 기록</h3>
+                    <p className="text-xs text-muted-foreground">배운 표현을 자동 저장</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <Brain className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h3 className="font-medium text-sm">스마트 복습</h3>
+                    <p className="text-xs text-muted-foreground">간격 반복으로 기억 강화</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* 예시 표현 (결과 없을 때) */}
+        {!result && !isLoading && (
+          <div className="mt-6 text-center">
+            <p className="text-xs text-muted-foreground mb-2">이런 걸 물어보세요</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {['밥 먹었어?', '오늘 뭐해?', '조금만 기다려', '괜찮아?'].map((example) => (
+                <Badge
+                  key={example}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-primary/10 transition-colors"
+                >
+                  {example}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  );
+  )
 }
