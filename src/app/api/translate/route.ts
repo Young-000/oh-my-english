@@ -85,14 +85,10 @@ export async function POST(request: NextRequest) {
     let learningRecord: LearningRecord | null = null
     if (user) {
       const learningRecordRepository = new SupabaseLearningRecordRepository(supabase)
-      learningRecord = await learningRecordRepository.save({
+      learningRecord = await learningRecordRepository.create({
         userId: user.id,
         koreanInput,
-        englishExpression: translationResult.mainExpression.english,
-        contextExplanation: translationResult.explanation.context,
-        alternatives: translationResult.alternatives,
-        relatedVocabulary: translationResult.relatedVocabulary,
-        category: translationResult.category,
+        translationResult,
       })
     } else {
       // 비로그인 사용자는 임시 레코드 생성 (저장 안 함)
