@@ -33,10 +33,20 @@ export class ClaudeTranslationService implements ITranslationService {
     }
 
     try {
-      const result = JSON.parse(content.text) as TranslationResult
+      // Markdown 코드 블록 제거 (```json ... ``` 형식 처리)
+      let jsonText = content.text.trim()
+      if (jsonText.startsWith('```')) {
+        // 첫 줄 제거 (```json 또는 ```)
+        jsonText = jsonText.replace(/^```(?:json)?\n?/, '')
+        // 마지막 ``` 제거
+        jsonText = jsonText.replace(/\n?```$/, '')
+      }
+
+      const result = JSON.parse(jsonText) as TranslationResult
       return this.validateAndNormalize(result)
-    } catch {
-      throw new Error(`Failed to parse Claude response: ${content.text}`)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      throw new Error(`Failed to parse Claude response: ${errorMessage}`)
     }
   }
 

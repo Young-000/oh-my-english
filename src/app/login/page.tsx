@@ -27,14 +27,21 @@ function LoginForm() {
     setMessage(null)
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${redirectTo}`,
-        },
+      // API route를 통해 로그인 처리 (서버에서 profile 자동 생성)
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          redirectTo: `${window.location.origin}/auth/callback?next=${redirectTo}`,
+        }),
       })
 
-      if (error) throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '로그인 중 오류가 발생했습니다.')
+      }
 
       setMessage({
         type: 'success',

@@ -81,26 +81,35 @@ export function QuizSession({ records, onComplete, onBack }: QuizSessionProps) {
       const data = await response.json()
       const result = data.quizResult
 
-      setSessionResults((prev) => [
-        ...prev,
-        {
-          recordId: currentQuiz.recordId,
-          quiz: currentQuiz,
-          result,
-          timeTakenMs,
-        },
-      ])
+      const newResult: SessionResult = {
+        recordId: currentQuiz.recordId,
+        quiz: currentQuiz,
+        result,
+        timeTakenMs,
+      }
+
+      // 새 결과를 포함한 배열 생성 (race condition 방지)
+      const updatedResults = [...sessionResults, newResult]
+      setSessionResults(updatedResults)
+
+      // 마지막 퀴즈라면 업데이트된 결과를 저장해둠
+      if (currentIndex === quizzes.length - 1) {
+        // handleNext에서 사용할 수 있도록 ref 대신 클로저 활용
+        ;(handleNext as { latestResults?: SessionResult[] }).latestResults = updatedResults
+      }
 
       return result
     },
-    [quizzes, currentIndex]
+    [quizzes, currentIndex, sessionResults]
   )
 
   const handleNext = useCallback(() => {
     if (currentIndex < quizzes.length - 1) {
       setCurrentIndex((prev) => prev + 1)
     } else {
-      onComplete(sessionResults)
+      // 마지막 퀴즈: handleSubmit에서 저장한 최신 결과 사용
+      const latestResults = (handleNext as { latestResults?: SessionResult[] }).latestResults
+      onComplete(latestResults || sessionResults)
     }
   }, [currentIndex, quizzes.length, sessionResults, onComplete])
 

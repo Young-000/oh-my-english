@@ -34,14 +34,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'koreanInput is too long (max 500 characters)' }, { status: 400 })
     }
 
-    // Mock 모드 체크
-    const useMockMode = !isValidApiKey()
+    // API 키 유효성 체크
+    const hasValidApiKey = isValidApiKey()
 
-    if (useMockMode) {
-      // Mock 모드: API 연결 없이 테스트
+    // Mock 모드: API 키가 없을 때만
+    if (!hasValidApiKey) {
       const mockResult = generateMockTranslation(koreanInput, target, situation)
 
-      // Mock Learning Record
       const mockLearningRecord: LearningRecord = {
         id: `mock-${Date.now()}`,
         userId: 'mock-user',
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
         isBookmarked: false,
         masteryLevel: 0,
         reviewCount: 0,
-        nextReviewAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1일 후
+        nextReviewAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -66,35 +65,60 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 실제 API 모드: 인증 필요
+    // 실제 API 모드: Claude API 사용 (로그인 선택적)
     const supabase = await createServerSupabaseClient()
     const {
       data: { user },
-      error: authError,
     } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // 서비스 초기화
+    // Claude API로 번역 실행
     const translationService = new ClaudeTranslationService()
-    const learningRecordRepository = new SupabaseLearningRecordRepository(supabase)
-    const useCase = new TranslateAndSaveUseCase(translationService, learningRecordRepository)
-
-    // context 생성 (target + situation 정보 포함)
     const contextInfo = buildContextInfo(target, situation)
 
-    // 번역 및 저장 실행
-    const result = await useCase.execute({
-      userId: user.id,
+    // 번역 결과 가져오기
+    const translationResult = await translationService.translate({
       koreanInput,
       context: contextInfo,
     })
 
+    // 로그인된 사용자만 DB에 저장
+    let learningRecord: LearningRecord | null = null
+    if (user) {
+      const learningRecordRepository = new SupabaseLearningRecordRepository(supabase)
+      learningRecord = await learningRecordRepository.save({
+        userId: user.id,
+        koreanInput,
+        englishExpression: translationResult.mainExpression.english,
+        contextExplanation: translationResult.explanation.context,
+        alternatives: translationResult.alternatives,
+        relatedVocabulary: translationResult.relatedVocabulary,
+        category: translationResult.category,
+      })
+    } else {
+      // 비로그인 사용자는 임시 레코드 생성 (저장 안 함)
+      learningRecord = {
+        id: `temp-${Date.now()}`,
+        userId: 'anonymous',
+        koreanInput,
+        englishExpression: translationResult.mainExpression.english,
+        contextExplanation: translationResult.explanation.context,
+        alternatives: translationResult.alternatives,
+        relatedVocabulary: translationResult.relatedVocabulary,
+        category: translationResult.category,
+        isBookmarked: false,
+        masteryLevel: 0,
+        reviewCount: 0,
+        nextReviewAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    }
+
     return NextResponse.json({
-      ...result,
+      translationResult,
+      learningRecord,
       isMock: false,
+      isLoggedIn: !!user,
     })
   } catch (error) {
     console.error('Translation error:', error)
