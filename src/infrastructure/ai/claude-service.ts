@@ -32,13 +32,55 @@ export class ClaudeTranslationService implements ITranslationService {
       throw new Error('Unexpected response type from Claude API')
     }
 
+    return this.parseResponse(content.text)
+  }
+
+  /**
+   * 스트리밍 번역 - 텍스트 청크를 실시간으로 전달
+   */
+  async *translateStream(
+    request: TranslationRequest
+  ): AsyncGenerator<string, TranslationResult, unknown> {
+    const userPrompt = createTranslationPrompt(request.koreanInput, request.context)
+
+    const stream = this.client.messages.stream({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [
+        {
+          role: 'user',
+          content: userPrompt,
+        },
+      ],
+      system: TRANSLATION_SYSTEM_PROMPT,
+    })
+
+    let fullText = ''
+
+    for await (const event of stream) {
+      if (
+        event.type === 'content_block_delta' &&
+        event.delta.type === 'text_delta'
+      ) {
+        const chunk = event.delta.text
+        fullText += chunk
+        yield chunk
+      }
+    }
+
+    // 스트림 완료 후 파싱된 결과 반환
+    return this.parseResponse(fullText)
+  }
+
+  /**
+   * Claude 응답 텍스트를 파싱
+   */
+  private parseResponse(text: string): TranslationResult {
     try {
       // Markdown 코드 블록 제거 (```json ... ``` 형식 처리)
-      let jsonText = content.text.trim()
+      let jsonText = text.trim()
       if (jsonText.startsWith('```')) {
-        // 첫 줄 제거 (```json 또는 ```)
         jsonText = jsonText.replace(/^```(?:json)?\n?/, '')
-        // 마지막 ``` 제거
         jsonText = jsonText.replace(/\n?```$/, '')
       }
 

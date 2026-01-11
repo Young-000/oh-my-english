@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ClaudeTranslationService } from '@/infrastructure/ai/claude-service'
 import { SupabaseLearningRecordRepository } from '@/infrastructure/supabase/learning-record-repository'
-import { TranslateAndSaveUseCase } from '@/domain/use-cases/translate-and-save'
 import { createServerSupabaseClient } from '@/infrastructure/supabase/server'
 import { generateMockTranslation } from '@/lib/mock/translation-mock'
 import type { TargetType, SituationType } from '@/presentation/components/TranslationInput'

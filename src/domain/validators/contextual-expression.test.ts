@@ -262,14 +262,14 @@ describe('Same Korean, Different Context', () => {
     describe(`"${korean}" translations`, () => {
       Object.entries(contexts).forEach(([context, { good, bad }]) => {
         describe(`in ${context} context`, () => {
-          good.forEach((expr) => {
+          good.forEach((expr: string) => {
             it(`should accept "${expr}" as appropriate`, () => {
               const result = calculateContextScore(expr, context as Context)
               expect(result.score).toBeGreaterThanOrEqual(45) // 유연한 기준
             })
           })
 
-          bad.forEach((expr) => {
+          bad.forEach((expr: string) => {
             it(`should rate "${expr}" lower`, () => {
               const result = calculateContextScore(expr, context as Context)
               // bad 표현은 해당 문맥에서 낮거나 기본 점수

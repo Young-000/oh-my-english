@@ -66,6 +66,8 @@ describe('QuizCard', () => {
     it('should submit answer and show result', async () => {
       const mockResult: QuizResult = {
         isCorrect: true,
+        correctAnswer: quiz.correctAnswer,
+        userAnswer: 'What do you want to eat?',
         similarity: 1,
         feedback: '🎉 정답입니다!',
       }
@@ -88,6 +90,8 @@ describe('QuizCard', () => {
     it('should show next button after submission', async () => {
       const mockResult: QuizResult = {
         isCorrect: true,
+        correctAnswer: quiz.correctAnswer,
+        userAnswer: 'What do you want to eat?',
         similarity: 1,
         feedback: '🎉 정답입니다!',
       }
@@ -109,6 +113,8 @@ describe('QuizCard', () => {
     it('should call onNext when next button is clicked', async () => {
       const mockResult: QuizResult = {
         isCorrect: true,
+        correctAnswer: quiz.correctAnswer,
+        userAnswer: 'What do you want to eat?',
         similarity: 1,
         feedback: '🎉 정답입니다!',
       }
@@ -149,6 +155,8 @@ describe('QuizCard', () => {
     it('should show correct result for fill blank', async () => {
       const mockResult: QuizResult = {
         isCorrect: true,
+        correctAnswer: quiz.correctAnswer,
+        userAnswer: 'What do you want to eat?',
         similarity: 1,
         feedback: '🎉 정답입니다!',
       }
@@ -205,6 +213,8 @@ describe('QuizCard', () => {
     it('should show correct/incorrect styling after submission', async () => {
       const mockResult: QuizResult = {
         isCorrect: true,
+        correctAnswer: quiz.correctAnswer,
+        userAnswer: 'What do you want to eat?',
         similarity: 1,
         feedback: '🎉 정답입니다!',
       }
@@ -252,6 +262,8 @@ describe('QuizCard', () => {
     it('should show correct answer when wrong', async () => {
       const mockResult: QuizResult = {
         isCorrect: false,
+        correctAnswer: quiz.correctAnswer,
+        userAnswer: 'Hello world',
         similarity: 0.3,
         feedback: '아쉽네요. 정답을 확인해보세요.',
       }

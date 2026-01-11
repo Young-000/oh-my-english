@@ -106,9 +106,9 @@ describe('Quiz API', () => {
       const request = createRequest({})
 
       const response = await generateQuiz(request)
-      const data = await response.json()
 
       expect(response.status).toBe(400)
+      const data = await response.json()
       expect(data.error).toContain('recordIds')
     })
 
@@ -204,7 +204,7 @@ describe('Quiz API', () => {
 
     describe('유효성 검사', () => {
       it('recordId가 없으면 400 에러를 반환해야 한다', async () => {
-        const { recordId, ...withoutRecordId } = validSubmission
+        const { recordId: _recordId, ...withoutRecordId } = validSubmission
         const request = createRequest(withoutRecordId)
 
         const response = await submitQuiz(request)
@@ -228,7 +228,7 @@ describe('Quiz API', () => {
       })
 
       it('question이 없으면 400 에러를 반환해야 한다', async () => {
-        const { question, ...withoutQuestion } = validSubmission
+        const { question: _question, ...withoutQuestion } = validSubmission
         const request = createRequest(withoutQuestion)
 
         const response = await submitQuiz(request)
@@ -239,7 +239,7 @@ describe('Quiz API', () => {
       })
 
       it('userAnswer가 없으면 400 에러를 반환해야 한다', async () => {
-        const { userAnswer, ...withoutUserAnswer } = validSubmission
+        const { userAnswer: _userAnswer, ...withoutUserAnswer } = validSubmission
         const request = createRequest(withoutUserAnswer)
 
         const response = await submitQuiz(request)
@@ -250,7 +250,7 @@ describe('Quiz API', () => {
       })
 
       it('correctAnswer가 없으면 400 에러를 반환해야 한다', async () => {
-        const { correctAnswer, ...withoutCorrectAnswer } = validSubmission
+        const { correctAnswer: _correctAnswer, ...withoutCorrectAnswer } = validSubmission
         const request = createRequest(withoutCorrectAnswer)
 
         const response = await submitQuiz(request)

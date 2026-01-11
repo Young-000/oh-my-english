@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 /**
  * 축약형 표현 분석
  */
-interface ContractionAnalysis {
+interface _ContractionAnalysis {
   original: string
   contracted: string
   isNatural: boolean

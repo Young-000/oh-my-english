@@ -91,7 +91,7 @@ describe('Complete Learning Flow Simulation', () => {
     })
 
     it('should decrease mastery on wrong answer', () => {
-      let masteryLevel = 3
+      const masteryLevel = 3
 
       // 오답: 3 → 2
       const result = updateMastery(masteryLevel, false)

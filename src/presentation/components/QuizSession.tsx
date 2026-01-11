@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -28,6 +28,9 @@ export function QuizSession({ records, onComplete, onBack }: QuizSessionProps) {
   const [sessionResults, setSessionResults] = useState<SessionResult[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // 최신 결과를 저장하는 ref (클로저 문제 해결)
+  const latestResultsRef = useRef<SessionResult[]>([])
 
   // 퀴즈 생성
   useEffect(() => {
@@ -92,11 +95,8 @@ export function QuizSession({ records, onComplete, onBack }: QuizSessionProps) {
       const updatedResults = [...sessionResults, newResult]
       setSessionResults(updatedResults)
 
-      // 마지막 퀴즈라면 업데이트된 결과를 저장해둠
-      if (currentIndex === quizzes.length - 1) {
-        // handleNext에서 사용할 수 있도록 ref 대신 클로저 활용
-        ;(handleNext as { latestResults?: SessionResult[] }).latestResults = updatedResults
-      }
+      // ref에 최신 결과 저장 (handleNext에서 사용)
+      latestResultsRef.current = updatedResults
 
       return result
     },
@@ -107,9 +107,8 @@ export function QuizSession({ records, onComplete, onBack }: QuizSessionProps) {
     if (currentIndex < quizzes.length - 1) {
       setCurrentIndex((prev) => prev + 1)
     } else {
-      // 마지막 퀴즈: handleSubmit에서 저장한 최신 결과 사용
-      const latestResults = (handleNext as { latestResults?: SessionResult[] }).latestResults
-      onComplete(latestResults || sessionResults)
+      // 마지막 퀴즈: ref에서 최신 결과 사용
+      onComplete(latestResultsRef.current.length > 0 ? latestResultsRef.current : sessionResults)
     }
   }, [currentIndex, quizzes.length, sessionResults, onComplete])
 

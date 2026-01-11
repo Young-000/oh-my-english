@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { QuizGenerator, QuizType, Quiz } from './quiz-generator'
+import { QuizGenerator, QuizType } from './quiz-generator'
 import type { LearningRecord } from '../entities/translation'
 
 /**
@@ -25,8 +25,8 @@ describe('Quiz Generation Quality', () => {
       { expression: 'Have you had anything?', situation: '포괄적', difference: '음식 전반' },
     ],
     relatedVocabulary: [
-      { word: 'eat', meaning: '먹다', example: 'I eat breakfast at 7am' },
-      { word: 'meal', meaning: '식사', example: 'We had a nice meal' },
+      { word: 'eat', meaning: '먹다', partOfSpeech: 'verb', exampleSentence: 'I eat breakfast at 7am' },
+      { word: 'meal', meaning: '식사', partOfSpeech: 'noun', exampleSentence: 'We had a nice meal' },
     ],
     category: '일상대화',
     isBookmarked: false,

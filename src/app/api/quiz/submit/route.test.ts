@@ -72,8 +72,8 @@ vi.mock('@/infrastructure/supabase/quiz-attempt-repository', () => {
 })
 
 const importHandler = async () => {
-  const module = await import('./route')
-  return module.POST
+  const routeModule = await import('./route')
+  return routeModule.POST
 }
 
 describe('POST /api/quiz/submit', () => {

@@ -65,11 +65,11 @@ export function Header() {
                       </Button>
                     </Link>
                     <Link href="/settings">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" aria-label="설정">
                         <Settings className="h-4 w-4" />
                       </Button>
                     </Link>
-                    <Button variant="ghost" size="icon" onClick={handleLogout} title="로그아웃">
+                    <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="로그아웃">
                       <LogOut className="h-4 w-4" />
                     </Button>
                   </>

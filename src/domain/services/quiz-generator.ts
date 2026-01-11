@@ -1,4 +1,4 @@
-import type { LearningRecord, QuizAttempt } from '../entities/translation'
+import type { LearningRecord } from '../entities/translation'
 
 export type QuizType = 'korean_to_english' | 'fill_blank' | 'multiple_choice'
 

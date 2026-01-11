@@ -188,7 +188,7 @@ describe('Grammar Pattern Validation', () => {
       { sentence: 'I can do it', shouldDetect: false, word: '' },
     ]
 
-    doubleWordTests.forEach(({ sentence, shouldDetect, word }) => {
+    doubleWordTests.forEach(({ sentence, shouldDetect, word: _word }) => {
       it(`should ${shouldDetect ? 'detect' : 'not detect'} double word in "${sentence}"`, () => {
         const result = validateGrammar(sentence)
         if (shouldDetect) {

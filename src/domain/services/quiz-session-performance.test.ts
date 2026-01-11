@@ -30,7 +30,7 @@ describe('Quiz Session Performance', () => {
       { expression: 'Alternative two', situation: 'formal', difference: 'polite' },
     ],
     relatedVocabulary: [
-      { word: 'test', meaning: '테스트', example: 'This is a test' },
+      { word: 'test', meaning: '테스트', partOfSpeech: 'noun', exampleSentence: 'This is a test' },
     ],
     category: '일상대화',
     isBookmarked: false,

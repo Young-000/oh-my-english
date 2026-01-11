@@ -8,14 +8,19 @@ import type {
 import type { QuizAttempt } from '@/domain/entities/translation'
 import type { Database } from './types'
 
-type QuizAttemptRow = Database['public']['Tables']['quiz_attempts']['Row']
+type QuizAttemptRow = Database['oh_my_english']['Tables']['quiz_attempts']['Row']
+
+const SCHEMA = 'oh_my_english'
 
 export class SupabaseQuizAttemptRepository implements IQuizAttemptRepository {
   constructor(private readonly supabase: any) {}
 
+  private get table() {
+    return this.supabase.schema(SCHEMA).from('quiz_attempts')
+  }
+
   async create(input: CreateQuizAttemptInput): Promise<QuizAttempt> {
-    const { data, error } = await this.supabase
-      .from('quiz_attempts')
+    const { data, error } = await this.table
       .insert({
         user_id: input.userId,
         record_id: input.recordId,
@@ -34,8 +39,7 @@ export class SupabaseQuizAttemptRepository implements IQuizAttemptRepository {
   }
 
   async findById(id: string): Promise<QuizAttempt | null> {
-    const { data, error } = await this.supabase
-      .from('quiz_attempts')
+    const { data, error } = await this.table
       .select()
       .eq('id', id)
       .single()
@@ -48,8 +52,7 @@ export class SupabaseQuizAttemptRepository implements IQuizAttemptRepository {
   }
 
   async findByUserId(filters: QuizAttemptFilters): Promise<QuizAttempt[]> {
-    let query = this.supabase
-      .from('quiz_attempts')
+    let query = this.table
       .select()
       .eq('user_id', filters.userId)
       .order('created_at', { ascending: false })
@@ -81,8 +84,7 @@ export class SupabaseQuizAttemptRepository implements IQuizAttemptRepository {
   }
 
   async findByRecordId(recordId: string): Promise<QuizAttempt[]> {
-    const { data, error } = await this.supabase
-      .from('quiz_attempts')
+    const { data, error } = await this.table
       .select()
       .eq('record_id', recordId)
       .order('created_at', { ascending: false })
@@ -92,8 +94,7 @@ export class SupabaseQuizAttemptRepository implements IQuizAttemptRepository {
   }
 
   async getStats(userId: string): Promise<QuizStats> {
-    const { data, error } = await this.supabase
-      .from('quiz_attempts')
+    const { data, error } = await this.table
       .select('is_correct, time_taken_ms')
       .eq('user_id', userId)
 
@@ -123,8 +124,7 @@ export class SupabaseQuizAttemptRepository implements IQuizAttemptRepository {
   }
 
   async getStatsForRecord(recordId: string): Promise<QuizStats> {
-    const { data, error } = await this.supabase
-      .from('quiz_attempts')
+    const { data, error } = await this.table
       .select('is_correct, time_taken_ms')
       .eq('record_id', recordId)
 
@@ -154,7 +154,7 @@ export class SupabaseQuizAttemptRepository implements IQuizAttemptRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await this.supabase.from('quiz_attempts').delete().eq('id', id)
+    const { error } = await this.table.delete().eq('id', id)
     if (error) throw error
   }
 

@@ -23,7 +23,7 @@ interface ApiErrorResponse {
   details?: unknown
 }
 
-type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse
+type _ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse
 
 // 번역 결과 타입
 interface TranslationResultData {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { QuizGenerator, QuizGrader, Quiz, QuizSubmission } from './quiz-generator'
+import { QuizGenerator, QuizGrader, QuizSubmission } from './quiz-generator'
 import type { LearningRecord } from '../entities/translation'
 
 /**

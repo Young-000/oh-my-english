@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import { TranslationResultValidator } from './translation-result.validator'
 import type { TranslationResult } from '../entities/translation'

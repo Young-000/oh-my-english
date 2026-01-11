@@ -28,8 +28,6 @@ test.describe('Quiz Page - UI Elements (No Auth)', () => {
     await page.goto('/quiz')
 
     // 로딩 스피너 또는 로그인 페이지 리다이렉트 확인
-    const spinner = page.locator('.animate-spin')
-    const loginButton = page.getByRole('link', { name: /로그인/i })
     const anyElement = page.locator('body')
 
     await expect(anyElement).toBeVisible()

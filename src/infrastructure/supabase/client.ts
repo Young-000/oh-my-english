@@ -1,18 +1,13 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from './types'
 
-// 환경 변수 검증 함수
-function getRequiredEnv(key: string): string {
-  const value = process.env[key]
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`)
-  }
-  return value
-}
+// NEXT_PUBLIC_* 환경 변수는 빌드 타임에 인라인되므로 정적 접근 필요
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 export function createClient() {
-  return createBrowserClient<Database>(
-    getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    getRequiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
-  )
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables')
+  }
+  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
 }

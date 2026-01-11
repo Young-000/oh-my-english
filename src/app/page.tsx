@@ -1,52 +1,27 @@
 'use client'
 
-import { useState } from 'react'
 import { TranslationInput, type TranslationContext } from '@/presentation/components/TranslationInput'
 import { TranslationResultCard } from '@/presentation/components/TranslationResult'
+import { StreamingResult } from '@/presentation/components/StreamingResult'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Sparkles, BookOpen, History, Brain, AlertCircle } from 'lucide-react'
-import type { TranslationResult, LearningRecord } from '@/domain/entities/translation'
-
-interface TranslationResponse {
-  translationResult: TranslationResult
-  learningRecord: LearningRecord
-}
+import { Sparkles, BookOpen, History, Brain, AlertCircle, Zap } from 'lucide-react'
+import { useStreamingTranslation } from '@/presentation/hooks/useStreamingTranslation'
 
 export default function Home() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<TranslationResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [isMockMode, setIsMockMode] = useState(false)
+  const {
+    isLoading,
+    isStreaming,
+    streamingText,
+    result,
+    error,
+    isMockMode,
+    fromCache,
+    translate,
+  } = useStreamingTranslation()
 
   const handleSubmit = async (koreanInput: string, context: TranslationContext) => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          koreanInput,
-          target: context.target,
-          situation: context.situation,
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Translation failed')
-      }
-
-      const data = await response.json()
-      setResult(data)
-      setIsMockMode(data.isMock || false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
-    } finally {
-      setIsLoading(false)
-    }
+    await translate(koreanInput, context)
   }
 
   const handleBookmark = async () => {
@@ -82,6 +57,14 @@ export default function Home() {
           </div>
         )}
 
+        {/* Cache Hit 알림 */}
+        {fromCache && result && (
+          <div className="mb-4 flex items-center gap-2 text-sm text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-green-200">
+            <Zap className="h-4 w-4" />
+            <span>캐시에서 즉시 로드됨</span>
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <Card className="mb-6 border-destructive bg-destructive/10">
@@ -91,15 +74,20 @@ export default function Home() {
           </Card>
         )}
 
-        {/* Loading */}
+        {/* Streaming / Loading */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <div className="animate-pulse space-y-4 w-full">
-              <div className="h-32 bg-muted rounded-lg" />
-              <div className="h-24 bg-muted rounded-lg" />
-              <div className="h-24 bg-muted rounded-lg" />
-            </div>
-            <p className="mt-4 text-sm">번역 중...</p>
+          <div className="mb-6">
+            {isStreaming && streamingText ? (
+              <StreamingResult text={streamingText} />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <div className="animate-pulse space-y-4 w-full">
+                  <div className="h-32 bg-muted rounded-lg" />
+                  <div className="h-24 bg-muted rounded-lg" />
+                </div>
+                <p className="mt-4 text-sm">번역 준비 중...</p>
+              </div>
+            )}
           </div>
         )}
 

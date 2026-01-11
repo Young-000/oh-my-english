@@ -2,6 +2,44 @@
 
 AI 기반 영어 학습 서비스
 
+---
+
+## 진행상황 체크리스트
+
+| 영역 | 상태 | 배포 URL |
+|------|:----:|----------|
+| **Frontend** | ✅ | [oh-my-english.vercel.app](https://oh-my-english.vercel.app) |
+| **Backend** | ✅ | Next.js API Routes |
+| **DB 연결** | 🔧 | 스키마 미생성 |
+| **배포** | ✅ | Vercel |
+
+<details>
+<summary>상세 체크리스트</summary>
+
+### Frontend
+- [x] 프로젝트 초기화 (Next.js)
+- [x] TypeScript 설정
+- [x] 환경 변수 (.env.local)
+
+### Backend
+- [x] Next.js API Routes
+- [x] Claude AI API 연동
+
+### DB 연결
+- [x] Project 2 선택
+- [ ] `oh_my_english` 스키마 생성
+- [ ] 테이블 생성
+- [ ] 클라이언트 `.schema()` 적용
+
+### 배포
+- [x] vercel.json
+- [x] 환경 변수 (Vercel)
+- [x] 프로덕션 배포
+
+</details>
+
+---
+
 ## Supabase 설정
 
 > ⚠️ **필수 참조**: [`/SUPABASE_RULES.md`](/SUPABASE_RULES.md)

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { QuizGenerator, QuizType } from '../quiz-generator'
+import { QuizGenerator } from '../quiz-generator'
 import type { LearningRecord } from '@/domain/entities/translation'
 
 // 테스트용 학습 기록 생성 헬퍼

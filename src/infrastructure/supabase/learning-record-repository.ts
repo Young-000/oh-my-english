@@ -8,13 +8,16 @@ import type { LearningRecord } from '@/domain/entities/translation'
 import type { Database } from './types'
 import { calculateNextReview } from '@/lib/spaced-repetition'
 
-type LearningRecordRow = Database['public']['Tables']['learning_records']['Row']
+type LearningRecordRow = Database['oh_my_english']['Tables']['learning_records']['Row']
+
+const SCHEMA = 'oh_my_english'
 
 export class SupabaseLearningRecordRepository implements ILearningRecordRepository {
   constructor(private readonly supabase: any) {}
 
   async create(input: CreateLearningRecordInput): Promise<LearningRecord> {
     const { data, error } = await this.supabase
+      .schema(SCHEMA)
       .from('learning_records')
       .insert({
         user_id: input.userId,
@@ -34,6 +37,7 @@ export class SupabaseLearningRecordRepository implements ILearningRecordReposito
 
   async findById(id: string): Promise<LearningRecord | null> {
     const { data, error } = await this.supabase
+      .schema(SCHEMA)
       .from('learning_records')
       .select()
       .eq('id', id)
@@ -48,6 +52,7 @@ export class SupabaseLearningRecordRepository implements ILearningRecordReposito
 
   async findByUserId(filters: LearningRecordFilters): Promise<LearningRecord[]> {
     let query = this.supabase
+      .schema(SCHEMA)
       .from('learning_records')
       .select()
       .eq('user_id', filters.userId)
@@ -89,6 +94,7 @@ export class SupabaseLearningRecordRepository implements ILearningRecordReposito
     const now = new Date().toISOString()
 
     const { data, error } = await this.supabase
+      .schema(SCHEMA)
       .from('learning_records')
       .select()
       .eq('user_id', userId)
@@ -110,6 +116,7 @@ export class SupabaseLearningRecordRepository implements ILearningRecordReposito
       updateData.next_review_at = data.nextReviewAt?.toISOString() ?? null
 
     const { data: updated, error } = await this.supabase
+      .schema(SCHEMA)
       .from('learning_records')
       .update(updateData)
       .eq('id', id)
@@ -145,11 +152,12 @@ export class SupabaseLearningRecordRepository implements ILearningRecordReposito
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await this.supabase.from('learning_records').delete().eq('id', id)
+    const { error } = await this.supabase.schema(SCHEMA)
+      .from('learning_records').delete().eq('id', id)
     if (error) throw error
   }
 
-  private mapToEntity(row: Database['public']['Tables']['learning_records']['Row']): LearningRecord {
+  private mapToEntity(row: Database['oh_my_english']['Tables']['learning_records']['Row']): LearningRecord {
     return {
       id: row.id,
       userId: row.user_id,

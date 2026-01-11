@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { generateMockTranslation, isMockMode } from '../translation-mock'
-import type { TranslationResult } from '@/domain/entities/translation'
 
 describe('Mock Translation', () => {
   describe('generateMockTranslation', () => {

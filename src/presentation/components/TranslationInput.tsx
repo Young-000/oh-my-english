@@ -72,6 +72,7 @@ export function TranslationInput({ onSubmit, isLoading }: TranslationInputProps)
           size="icon"
           className="absolute right-2 bottom-2"
           disabled={!input.trim() || isLoading}
+          aria-label={isLoading ? '번역 중' : '번역하기'}
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

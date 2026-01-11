@@ -160,7 +160,7 @@ describe('Korean-English Cultural Differences', () => {
       },
     ]
 
-    literalTranslationTests.forEach(({ literal, natural, culturalNote }) => {
+    literalTranslationTests.forEach(({ literal, natural, culturalNote: _culturalNote }) => {
       it(`should flag "${literal}" as culturally awkward`, () => {
         const result = analyzeCulturalFit(literal, 'casual_korean_to_english')
         expect(result.notes.some(n => n.includes('Korean') || n.includes('Literal'))).toBe(true)

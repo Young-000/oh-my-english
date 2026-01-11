@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export interface Database {
-  public: {
+  oh_my_english: {
     Tables: {
       profiles: {
         Row: {
@@ -189,6 +189,41 @@ export interface Database {
           quiz_total?: number
           streak_days?: number
           created_at?: string
+        }
+      }
+      translation_cache: {
+        Row: {
+          id: string
+          cache_key: string
+          korean_input: string
+          target_type: string
+          situation_type: string
+          translation_result: Record<string, unknown>
+          hit_count: number
+          created_at: string
+          last_accessed_at: string
+        }
+        Insert: {
+          id?: string
+          cache_key: string
+          korean_input: string
+          target_type?: string
+          situation_type?: string
+          translation_result: Record<string, unknown>
+          hit_count?: number
+          created_at?: string
+          last_accessed_at?: string
+        }
+        Update: {
+          id?: string
+          cache_key?: string
+          korean_input?: string
+          target_type?: string
+          situation_type?: string
+          translation_result?: Record<string, unknown>
+          hit_count?: number
+          created_at?: string
+          last_accessed_at?: string
         }
       }
     }
