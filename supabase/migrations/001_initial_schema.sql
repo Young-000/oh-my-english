@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS oh_my_english.profiles (
 
 -- Learning records (core table)
 CREATE TABLE IF NOT EXISTS oh_my_english.learning_records (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES oh_my_english.profiles(id) ON DELETE CASCADE,
   korean_input TEXT NOT NULL,
   english_expression TEXT NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS oh_my_english.learning_records (
 
 -- Quiz attempts
 CREATE TABLE IF NOT EXISTS oh_my_english.quiz_attempts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES oh_my_english.profiles(id) ON DELETE CASCADE,
   record_id UUID NOT NULL REFERENCES oh_my_english.learning_records(id) ON DELETE CASCADE,
   quiz_type TEXT NOT NULL CHECK (quiz_type IN ('korean_to_english', 'fill_blank', 'multiple_choice')),
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS oh_my_english.quiz_attempts (
 
 -- Daily statistics
 CREATE TABLE IF NOT EXISTS oh_my_english.daily_stats (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES oh_my_english.profiles(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   expressions_learned INTEGER DEFAULT 0,

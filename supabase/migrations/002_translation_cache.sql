@@ -32,11 +32,14 @@ ON oh_my_english.translation_cache(hit_count DESC);
 -- RLS 정책 (캐시는 모든 사용자가 읽기 가능)
 ALTER TABLE oh_my_english.translation_cache ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can read cache" ON oh_my_english.translation_cache;
 CREATE POLICY "Anyone can read cache" ON oh_my_english.translation_cache
   FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Service role can insert cache" ON oh_my_english.translation_cache;
 CREATE POLICY "Service role can insert cache" ON oh_my_english.translation_cache
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role can update cache" ON oh_my_english.translation_cache;
 CREATE POLICY "Service role can update cache" ON oh_my_english.translation_cache
   FOR UPDATE USING (true);
