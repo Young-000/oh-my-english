@@ -3,8 +3,10 @@ import { ClaudeTranslationService } from '@/infrastructure/ai/claude-service'
 import { SupabaseLearningRecordRepository } from '@/infrastructure/supabase/learning-record-repository'
 import { createServerSupabaseClient } from '@/infrastructure/supabase/server'
 import { generateMockTranslation } from '@/lib/mock/translation-mock'
+import { lookupExpression } from '@/infrastructure/vocabulary/vocabulary-lookup-service'
 import type { TargetType, SituationType } from '@/presentation/components/TranslationInput'
 import type { LearningRecord } from '@/domain/entities/translation'
+import type { TranslationResult } from '@/domain/entities/translation'
 
 // API 키가 유효한지 확인
 function isValidApiKey(): boolean {
@@ -64,7 +66,59 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 실제 API 모드: Claude API 사용 (로그인 선택적)
+    // 1. 먼저 단어장 DB에서 빠르게 검색 (응답 시간 단축)
+    const vocabularyLookup = await lookupExpression(koreanInput)
+
+    if (vocabularyLookup.found) {
+      // 단어장에서 찾음 - 즉시 응답 (API 호출 없음)
+      const vocabData = vocabularyLookup.data
+      const translationResult: TranslationResult = {
+        mainExpression: {
+          korean: vocabData.korean,
+          english: vocabData.english,
+          pronunciation: vocabData.pronunciation || undefined,
+        },
+        alternatives: vocabData.alternatives.map(alt => ({
+          korean: alt.korean_expression,
+          english: alt.english_expression,
+          nuance: alt.context_explanation || '',
+        })),
+        explanation: {
+          context: vocabData.explanation || '단어장에서 제공하는 표현입니다.',
+          grammar: '',
+          usage: '',
+        },
+        relatedVocabulary: [],
+        category: vocabData.category,
+      }
+
+      const learningRecord: LearningRecord = {
+        id: `vocab-${Date.now()}`,
+        userId: 'vocabulary',
+        koreanInput,
+        englishExpression: vocabData.english,
+        contextExplanation: vocabData.explanation || '',
+        alternatives: translationResult.alternatives,
+        relatedVocabulary: [],
+        category: vocabData.category,
+        isBookmarked: false,
+        masteryLevel: 0,
+        reviewCount: 0,
+        nextReviewAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+
+      return NextResponse.json({
+        translationResult,
+        learningRecord,
+        isMock: false,
+        isFromVocabulary: true, // 단어장에서 찾은 결과임을 표시
+        responseTime: 'fast', // 빠른 응답임을 표시
+      })
+    }
+
+    // 2. 단어장에 없으면 Claude API 사용
     const supabase = await createServerSupabaseClient()
     const {
       data: { user },
