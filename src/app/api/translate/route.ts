@@ -74,19 +74,17 @@ export async function POST(request: NextRequest) {
       const vocabData = vocabularyLookup.data
       const translationResult: TranslationResult = {
         mainExpression: {
-          korean: vocabData.korean,
           english: vocabData.english,
-          pronunciation: vocabData.pronunciation || undefined,
+          formality: situation === 'formal' ? 'formal' : 'casual',
         },
         alternatives: vocabData.alternatives.map(alt => ({
-          korean: alt.korean_expression,
-          english: alt.english_expression,
-          nuance: alt.context_explanation || '',
+          expression: alt.english_expression,
+          situation: alt.context_explanation || 'similar expression',
+          difference: alt.context_explanation || '',
         })),
         explanation: {
           context: vocabData.explanation || '단어장에서 제공하는 표현입니다.',
-          grammar: '',
-          usage: '',
+          nuance: vocabData.pronunciation ? `발음: ${vocabData.pronunciation}` : '',
         },
         relatedVocabulary: [],
         category: vocabData.category,
@@ -113,8 +111,8 @@ export async function POST(request: NextRequest) {
         translationResult,
         learningRecord,
         isMock: false,
-        isFromVocabulary: true, // 단어장에서 찾은 결과임을 표시
-        responseTime: 'fast', // 빠른 응답임을 표시
+        isFromVocabulary: true,
+        responseTime: 'fast',
       })
     }
 
