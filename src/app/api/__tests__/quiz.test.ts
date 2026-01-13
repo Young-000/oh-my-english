@@ -129,6 +129,7 @@ describe('Quiz API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
+      expect(data.error).toBeDefined()
     })
 
     it('인증되지 않은 사용자는 401 에러를 받아야 한다', async () => {
