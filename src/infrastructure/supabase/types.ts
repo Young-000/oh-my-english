@@ -226,6 +226,129 @@ export interface Database {
           last_accessed_at?: string
         }
       }
+      vocabulary_books: {
+        Row: {
+          id: string
+          user_id: string | null
+          title: string
+          description: string | null
+          category: string
+          is_public: boolean
+          is_system: boolean
+          cover_emoji: string
+          expression_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          title: string
+          description?: string | null
+          category?: string
+          is_public?: boolean
+          is_system?: boolean
+          cover_emoji?: string
+          expression_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          title?: string
+          description?: string | null
+          category?: string
+          is_public?: boolean
+          is_system?: boolean
+          cover_emoji?: string
+          expression_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      vocabulary_items: {
+        Row: {
+          id: string
+          book_id: string
+          korean_expression: string
+          english_expression: string
+          pronunciation_guide: string | null
+          context_explanation: string | null
+          usage_examples: Array<{ korean: string; english: string }>
+          alternatives: Array<{ expression: string; situation: string; difference: string }>
+          difficulty_level: number
+          tags: string[]
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          korean_expression: string
+          english_expression: string
+          pronunciation_guide?: string | null
+          context_explanation?: string | null
+          usage_examples?: Array<{ korean: string; english: string }>
+          alternatives?: Array<{ expression: string; situation: string; difference: string }>
+          difficulty_level?: number
+          tags?: string[]
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          korean_expression?: string
+          english_expression?: string
+          pronunciation_guide?: string | null
+          context_explanation?: string | null
+          usage_examples?: Array<{ korean: string; english: string }>
+          alternatives?: Array<{ expression: string; situation: string; difference: string }>
+          difficulty_level?: number
+          tags?: string[]
+          order_index?: number
+          created_at?: string
+        }
+      }
+      vocabulary_progress: {
+        Row: {
+          id: string
+          user_id: string
+          item_id: string
+          mastery_level: number
+          review_count: number
+          correct_count: number
+          last_reviewed_at: string | null
+          next_review_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          item_id: string
+          mastery_level?: number
+          review_count?: number
+          correct_count?: number
+          last_reviewed_at?: string | null
+          next_review_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          item_id?: string
+          mastery_level?: number
+          review_count?: number
+          correct_count?: number
+          last_reviewed_at?: string | null
+          next_review_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

@@ -9,6 +9,22 @@ import { createServerSupabaseClient } from '../supabase/server'
 
 const SCHEMA = 'oh_my_english'
 
+// Type for the joined vocabulary_books relation
+interface VocabularyBookJoin {
+  title: string
+  category: string
+}
+
+// Type for vocabulary item with joined book data
+interface VocabularyItemWithBook {
+  korean_expression: string
+  english_expression: string
+  pronunciation_guide: string | null
+  context_explanation: string | null
+  difficulty_level: number
+  vocabulary_books: VocabularyBookJoin | null
+}
+
 export interface VocabularyMatch {
   korean_expression: string
   english_expression: string
@@ -72,6 +88,7 @@ export async function lookupExpression(
   if (exactMatch && !exactError) {
     // Found exact match - also get alternatives (similar expressions)
     const alternatives = await findSimilarExpressions(supabase, normalizedInput, exactMatch.korean_expression)
+    const typedExact = exactMatch as unknown as VocabularyItemWithBook
 
     return {
       found: true,
@@ -82,7 +99,7 @@ export async function lookupExpression(
         pronunciation: exactMatch.pronunciation_guide,
         explanation: exactMatch.context_explanation,
         alternatives,
-        category: (exactMatch.vocabulary_books as any)?.category || 'general'
+        category: typedExact.vocabulary_books?.category || 'general'
       }
     }
   }
@@ -107,7 +124,8 @@ export async function lookupExpression(
 
   if (partialMatches && partialMatches.length > 0 && !partialError) {
     // Sort by similarity (shorter = more similar)
-    const sorted = partialMatches.sort((a, b) =>
+    const typedMatches = partialMatches as unknown as VocabularyItemWithBook[]
+    const sorted = typedMatches.sort((a, b) =>
       a.korean_expression.length - b.korean_expression.length
     )
 
@@ -118,8 +136,8 @@ export async function lookupExpression(
       pronunciation_guide: item.pronunciation_guide,
       context_explanation: item.context_explanation,
       difficulty_level: item.difficulty_level,
-      book_title: (item.vocabulary_books as any)?.title || '',
-      book_category: (item.vocabulary_books as any)?.category || 'general'
+      book_title: item.vocabulary_books?.title || '',
+      book_category: item.vocabulary_books?.category || 'general'
     }))
 
     return {
@@ -131,7 +149,7 @@ export async function lookupExpression(
         pronunciation: best.pronunciation_guide,
         explanation: best.context_explanation,
         alternatives,
-        category: (best.vocabulary_books as any)?.category || 'general'
+        category: best.vocabulary_books?.category || 'general'
       }
     }
   }
@@ -174,14 +192,15 @@ async function findSimilarExpressions(
 
   if (error || !data) return []
 
-  return data.map(item => ({
+  const typedData = data as unknown as VocabularyItemWithBook[]
+  return typedData.map(item => ({
     korean_expression: item.korean_expression,
     english_expression: item.english_expression,
     pronunciation_guide: item.pronunciation_guide,
     context_explanation: item.context_explanation,
     difficulty_level: item.difficulty_level,
-    book_title: (item.vocabulary_books as any)?.title || '',
-    book_category: (item.vocabulary_books as any)?.category || 'general'
+    book_title: item.vocabulary_books?.title || '',
+    book_category: item.vocabulary_books?.category || 'general'
   }))
 }
 
@@ -221,7 +240,8 @@ export async function batchLookupExpressions(
   }
 
   // Map found results
-  const foundMap = new Map(data.map(item => [item.korean_expression, item]))
+  const typedData = data as unknown as VocabularyItemWithBook[]
+  const foundMap = new Map(typedData.map(item => [item.korean_expression, item]))
 
   for (const input of koreanInputs) {
     const normalized = input.trim().replace(/\s+/g, ' ')
@@ -237,7 +257,7 @@ export async function batchLookupExpressions(
           pronunciation: found.pronunciation_guide,
           explanation: found.context_explanation,
           alternatives: [],
-          category: (found.vocabulary_books as any)?.category || 'general'
+          category: found.vocabulary_books?.category || 'general'
         }
       })
     } else {
@@ -292,13 +312,14 @@ export async function getRandomExpressions(
 
   if (error || !data) return []
 
-  return data.map(item => ({
+  const typedData = data as unknown as VocabularyItemWithBook[]
+  return typedData.map(item => ({
     korean_expression: item.korean_expression,
     english_expression: item.english_expression,
     pronunciation_guide: item.pronunciation_guide,
     context_explanation: item.context_explanation,
     difficulty_level: item.difficulty_level,
-    book_title: (item.vocabulary_books as any)?.title || '',
-    book_category: (item.vocabulary_books as any)?.category || 'general'
+    book_title: item.vocabulary_books?.title || '',
+    book_category: item.vocabulary_books?.category || 'general'
   }))
 }

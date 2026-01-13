@@ -1,13 +1,16 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Bookmark, BookOpen, RefreshCw, Volume2 } from 'lucide-react'
+import { Bookmark, BookOpen, RefreshCw, Volume2, FolderPlus } from 'lucide-react'
 import type { TranslationResult, LearningRecord } from '@/domain/entities/translation'
+import { AddToVocabularyModal } from './AddToVocabularyModal'
 
 interface TranslationResultProps {
   result: TranslationResult
   record?: LearningRecord
+  koreanInput?: string
   onBookmark?: () => void
   onPractice?: () => void
 }
@@ -27,9 +30,34 @@ const formalityColors = {
 export function TranslationResultCard({
   result,
   record,
+  koreanInput,
   onBookmark,
   onPractice,
 }: TranslationResultProps) {
+  const [isVocabularyModalOpen, setIsVocabularyModalOpen] = useState(false)
+
+  // koreanInput prop 또는 record에서 가져옴
+  const originalKorean = koreanInput || record?.koreanInput || ''
+
+  const handleAddToVocabulary = async (bookId: string) => {
+    const response = await fetch(`/api/vocabulary/books/${bookId}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        koreanExpression: originalKorean,
+        englishExpression: result.mainExpression.english,
+        contextExplanation: result.explanation.context,
+        alternatives: result.alternatives,
+        tags: [result.category],
+      }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Failed to add to vocabulary')
+    }
+  }
+
   const handleSpeak = () => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(result.mainExpression.english)
@@ -64,6 +92,14 @@ export function TranslationResultCard({
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" onClick={handleSpeak} title="발음 듣기">
                 <Volume2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsVocabularyModalOpen(true)}
+                title="단어장에 추가"
+              >
+                <FolderPlus className="h-4 w-4" />
               </Button>
               {onBookmark && (
                 <Button
@@ -160,6 +196,15 @@ export function TranslationResultCard({
           </Button>
         </div>
       )}
+
+      {/* 단어장 추가 모달 */}
+      <AddToVocabularyModal
+        isOpen={isVocabularyModalOpen}
+        onClose={() => setIsVocabularyModalOpen(false)}
+        onAdd={handleAddToVocabulary}
+        koreanExpression={originalKorean}
+        englishExpression={result.mainExpression.english}
+      />
     </div>
   )
 }

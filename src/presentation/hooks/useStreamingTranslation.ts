@@ -15,6 +15,7 @@ interface StreamingState {
   error: string | null
   isMockMode: boolean
   fromCache: boolean
+  koreanInput: string
 }
 
 interface StreamEvent {
@@ -38,6 +39,7 @@ export function useStreamingTranslation() {
     error: null,
     isMockMode: false,
     fromCache: false,
+    koreanInput: '',
   })
 
   const translate = useCallback(
@@ -50,6 +52,7 @@ export function useStreamingTranslation() {
         error: null,
         isMockMode: false,
         fromCache: false,
+        koreanInput,
       })
 
       try {
@@ -137,6 +140,7 @@ export function useStreamingTranslation() {
       error: null,
       isMockMode: false,
       fromCache: false,
+      koreanInput: '',
     })
   }, [])
 

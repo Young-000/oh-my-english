@@ -5,7 +5,8 @@ import { TranslationResultCard } from '@/presentation/components/TranslationResu
 import { StreamingResult } from '@/presentation/components/StreamingResult'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Sparkles, BookOpen, History, Brain, AlertCircle, Zap } from 'lucide-react'
+import { Sparkles, BookOpen, History, Brain, AlertCircle, Zap, Library } from 'lucide-react'
+import Link from 'next/link'
 import { useStreamingTranslation } from '@/presentation/hooks/useStreamingTranslation'
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
     error,
     isMockMode,
     fromCache,
+    koreanInput,
     translate,
   } = useStreamingTranslation()
 
@@ -34,9 +36,19 @@ export default function Home() {
       <div className="container max-w-2xl mx-auto px-4 py-6">
         {/* Header */}
         <header className="text-center mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Oh My English!
-          </h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="w-10" />
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Oh My English!
+            </h1>
+            <Link
+              href="/vocabulary"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-primary bg-primary/10 rounded-full hover:bg-primary/20 transition-colors"
+            >
+              <Library className="h-4 w-4" />
+              단어장
+            </Link>
+          </div>
           <p className="text-muted-foreground mt-1 text-sm">
             한국어를 입력하면 상황에 맞는 자연스러운 영어를 알려드려요
           </p>
@@ -96,6 +108,7 @@ export default function Home() {
           <TranslationResultCard
             result={result.translationResult}
             record={result.learningRecord}
+            koreanInput={koreanInput}
             onBookmark={handleBookmark}
           />
         )}
