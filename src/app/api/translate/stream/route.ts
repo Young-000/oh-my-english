@@ -150,27 +150,15 @@ export async function POST(request: NextRequest) {
             return
           }
 
-          // Claude API 스트리밍
+          // Claude API - 빠른 응답을 위해 직접 호출 (딜레이 없음)
           const translationService = new ClaudeTranslationService()
           const contextInfo = buildContextInfo(target, situation)
 
-          // 스트리밍 대신 일반 번역 사용 (응답 텍스트를 누적하면서 청크 전송)
+          // 빠른 번역 실행 (스트리밍 효과 없이 즉시 결과 전송)
           const translationResult = await translationService.translate({
             koreanInput,
             context: contextInfo,
           })
-
-          // 결과를 청크로 전송 (타이핑 효과)
-          const resultJson = JSON.stringify(translationResult)
-          const chunkSize = 50
-          for (let i = 0; i < resultJson.length; i += chunkSize) {
-            const chunk = resultJson.slice(i, i + chunkSize)
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`)
-            )
-            // 약간의 딜레이로 타이핑 효과 (실제 스트리밍처럼 보이게)
-            await new Promise(resolve => setTimeout(resolve, 10))
-          }
 
           // 캐시에 저장
           const cache = new TranslationCache(supabase)

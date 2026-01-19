@@ -16,8 +16,8 @@ export class ClaudeTranslationService implements ITranslationService {
     const userPrompt = createTranslationPrompt(request.koreanInput, request.context)
 
     const response = await this.client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 800,
       messages: [
         {
           role: 'user',
@@ -44,8 +44,8 @@ export class ClaudeTranslationService implements ITranslationService {
     const userPrompt = createTranslationPrompt(request.koreanInput, request.context)
 
     const stream = this.client.messages.stream({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 800,
       messages: [
         {
           role: 'user',
