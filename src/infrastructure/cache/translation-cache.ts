@@ -1,4 +1,3 @@
-import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { TranslationResult } from '@/domain/entities/translation'
 
@@ -11,6 +10,17 @@ export interface CacheEntry {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabaseClient = SupabaseClient<any, any, any>
 
+/**
+ * Edge Runtime 호환 해시 함수 (Web Crypto API)
+ */
+async function sha256Hash(text: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(text)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32)
+}
+
 export class TranslationCache {
   constructor(private readonly supabase: AnySupabaseClient) {}
 
@@ -22,15 +32,15 @@ export class TranslationCache {
   }
 
   /**
-   * 캐시 키 생성 (입력 + 컨텍스트 해시)
+   * 캐시 키 생성 (입력 + 컨텍스트 해시) - Edge Runtime 호환
    */
-  private generateCacheKey(
+  private async generateCacheKey(
     koreanInput: string,
     target: string,
     situation: string
-  ): string {
+  ): Promise<string> {
     const normalized = `${koreanInput.trim().toLowerCase()}:${target}:${situation}`
-    return createHash('sha256').update(normalized).digest('hex').substring(0, 32)
+    return sha256Hash(normalized)
   }
 
   /**
@@ -41,7 +51,7 @@ export class TranslationCache {
     target: string,
     situation: string
   ): Promise<CacheEntry | null> {
-    const cacheKey = this.generateCacheKey(koreanInput, target, situation)
+    const cacheKey = await this.generateCacheKey(koreanInput, target, situation)
 
     const { data, error } = await this.table
       .select('translation_result, hit_count, created_at')
@@ -94,7 +104,7 @@ export class TranslationCache {
     situation: string,
     translationResult: TranslationResult
   ): Promise<void> {
-    const cacheKey = this.generateCacheKey(koreanInput, target, situation)
+    const cacheKey = await this.generateCacheKey(koreanInput, target, situation)
 
     const { error } = await this.table.upsert(
       {

@@ -9,8 +9,9 @@ export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
-  // Hydration mismatch 방지
+  // Hydration mismatch 방지 - next-themes 권장 패턴
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
 
