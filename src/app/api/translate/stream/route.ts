@@ -3,6 +3,7 @@ import { ClaudeTranslationService } from '@/infrastructure/ai/claude-service'
 import { TranslationCache } from '@/infrastructure/cache/translation-cache'
 import { SupabaseLearningRecordRepository } from '@/infrastructure/supabase/learning-record-repository'
 import { createServerSupabaseClient } from '@/infrastructure/supabase/server'
+import { withRateLimit } from '@/infrastructure/rate-limit'
 import type { TargetType, SituationType } from '@/presentation/components/TranslationInput'
 import type { LearningRecord, TranslationResult } from '@/domain/entities/translation'
 
@@ -59,6 +60,12 @@ function createLearningRecord(
 }
 
 export async function POST(request: NextRequest) {
+  // Rate Limiting 체크
+  const rateLimitResponse = withRateLimit(request, 'translation')
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   const encoder = new TextEncoder()
 
   try {

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Bookmark, BookOpen, RefreshCw, Volume2, FolderPlus } from 'lucide-react'
 import type { TranslationResult, LearningRecord } from '@/domain/entities/translation'
 import { AddToVocabularyModal } from './AddToVocabularyModal'
+import { ShareButton } from './ShareButton'
 
 interface TranslationResultProps {
   result: TranslationResult
@@ -93,6 +94,7 @@ export function TranslationResultCard({
               <Button variant="ghost" size="icon" onClick={handleSpeak} title="발음 듣기">
                 <Volume2 className="h-4 w-4" />
               </Button>
+              <ShareButton result={result} koreanInput={originalKorean} />
               <Button
                 variant="ghost"
                 size="icon"

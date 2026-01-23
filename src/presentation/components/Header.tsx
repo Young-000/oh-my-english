@@ -7,6 +7,7 @@ import { createClient } from '@/infrastructure/supabase/client'
 import { Button } from '@/components/ui/button'
 import { User, LogOut, History, Brain, Settings } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+import { ThemeToggle } from './ThemeToggle'
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
@@ -48,6 +49,7 @@ export function Header() {
           </Link>
 
           <nav className="flex items-center gap-2">
+            <ThemeToggle />
             {!isLoading && (
               <>
                 {user ? (
