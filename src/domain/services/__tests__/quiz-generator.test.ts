@@ -179,25 +179,26 @@ describe('QuizGenerator', () => {
   })
 
   describe('generateRandomQuiz', () => {
-    it('숙달도 0-1일 때 multiple_choice를 생성해야 한다', () => {
+    it('숙달도 0-1일 때 multiple_choice 또는 listening을 생성해야 한다', () => {
       const record = createMockRecord({ masteryLevel: 0 })
       const quiz = generator.generateRandomQuiz(record)
-      expect(quiz.type).toBe('multiple_choice')
+      // 랜덤으로 multiple_choice(60%) 또는 listening(40%) 생성
+      expect(['multiple_choice', 'listening']).toContain(quiz.type)
 
       const record2 = createMockRecord({ masteryLevel: 1 })
       const quiz2 = generator.generateRandomQuiz(record2)
-      expect(quiz2.type).toBe('multiple_choice')
+      expect(['multiple_choice', 'listening']).toContain(quiz2.type)
     })
 
-    it('숙달도 2-3일 때 fill_blank를 생성해야 한다', () => {
+    it('숙달도 2-3일 때 fill_blank, listening, 또는 sentence_ordering을 생성해야 한다', () => {
       const record = createMockRecord({ masteryLevel: 2 })
       const quiz = generator.generateRandomQuiz(record)
-      // fill_blank가 korean_to_english로 대체될 수 있으므로 둘 다 허용
-      expect(['fill_blank', 'korean_to_english']).toContain(quiz.type)
+      // fill_blank가 korean_to_english로 대체될 수 있고, listening이나 sentence_ordering도 포함
+      expect(['fill_blank', 'korean_to_english', 'listening', 'sentence_ordering']).toContain(quiz.type)
 
       const record2 = createMockRecord({ masteryLevel: 3 })
       const quiz2 = generator.generateRandomQuiz(record2)
-      expect(['fill_blank', 'korean_to_english']).toContain(quiz2.type)
+      expect(['fill_blank', 'korean_to_english', 'listening', 'sentence_ordering']).toContain(quiz2.type)
     })
 
     it('숙달도 4-5일 때 korean_to_english를 생성해야 한다', () => {

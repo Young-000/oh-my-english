@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { Header } from '@/presentation/components/Header'
@@ -15,11 +15,14 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
+export const viewport: Viewport = {
+  themeColor: '#7c3aed',
+}
+
 export const metadata: Metadata = {
   title: 'Oh My English! - 나만의 영어 표현 학습',
   description: '표현하고 싶은 한국어를 입력하면 자연스러운 영어로 알려드려요',
   manifest: '/manifest.json',
-  themeColor: '#7c3aed',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

@@ -161,11 +161,13 @@ describe('QuizGenerator', () => {
       expect(quiz.type).toBe('multiple_choice')
     })
 
-    it('should generate fill blank for medium mastery', () => {
+    it('should generate fill blank, listening, or sentence_ordering for medium mastery', () => {
       const mediumMasteryRecord = { ...sampleRecord, masteryLevel: 2 }
       const quiz = generator.generateRandomQuiz(mediumMasteryRecord, allRecords)
 
-      expect(quiz.type).toBe('fill_blank')
+      // 중간 숙달도에서는 fill_blank(50%), listening(30%), sentence_ordering(20%)
+      // fill_blank가 korean_to_english로 대체될 수도 있음
+      expect(['fill_blank', 'korean_to_english', 'listening', 'sentence_ordering']).toContain(quiz.type)
     })
 
     it('should generate korean to english for high mastery', () => {

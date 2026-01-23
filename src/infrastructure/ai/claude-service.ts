@@ -1,7 +1,8 @@
-import Anthropic from '@anthropic-ai/sdk'
-import type { ITranslationService, TranslationRequest } from '@/domain/repositories/translation-service'
-import type { TranslationResult } from '@/domain/entities/translation'
-import { TRANSLATION_SYSTEM_PROMPT, createTranslationPrompt } from './prompts'
+import Anthropic from '@anthropic-ai/sdk';
+import type { ITranslationService, TranslationRequest } from '@/domain/repositories/translation-service';
+import type { TranslationResult } from '@/domain/entities/translation';
+import { TRANSLATION_SYSTEM_PROMPT, createTranslationPrompt } from './prompts';
+import { ParseError } from '@/domain/errors/translation-errors';
 
 export class ClaudeTranslationService implements ITranslationService {
   private readonly client: Anthropic
@@ -27,12 +28,12 @@ export class ClaudeTranslationService implements ITranslationService {
       system: TRANSLATION_SYSTEM_PROMPT,
     })
 
-    const content = response.content[0]
+    const content = response.content[0];
     if (content.type !== 'text') {
-      throw new Error('Unexpected response type from Claude API')
+      throw ParseError.unexpectedResponseType('text', content.type);
     }
 
-    return this.parseResponse(content.text)
+    return this.parseResponse(content.text);
   }
 
   /**
@@ -78,25 +79,39 @@ export class ClaudeTranslationService implements ITranslationService {
   private parseResponse(text: string): TranslationResult {
     try {
       // Markdown 코드 블록 제거 (```json ... ``` 형식 처리)
-      let jsonText = text.trim()
+      let jsonText = text.trim();
       if (jsonText.startsWith('```')) {
-        jsonText = jsonText.replace(/^```(?:json)?\n?/, '')
-        jsonText = jsonText.replace(/\n?```$/, '')
+        jsonText = jsonText.replace(/^```(?:json)?\n?/, '');
+        jsonText = jsonText.replace(/\n?```$/, '');
       }
 
-      const result = JSON.parse(jsonText) as TranslationResult
-      return this.validateAndNormalize(result)
+      const result = JSON.parse(jsonText) as TranslationResult;
+      return this.validateAndNormalize(result);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      throw new Error(`Failed to parse Claude response: ${errorMessage}`)
+      // JSON 파싱 실패인지 검증 실패인지 구분
+      if (error instanceof ParseError) {
+        throw error;
+      }
+      throw ParseError.jsonParseFailed(text, error instanceof Error ? error : undefined);
     }
   }
 
   private validateAndNormalize(result: TranslationResult): TranslationResult {
     // 필수 필드 검증
     if (!result.mainExpression?.english) {
-      throw new Error('Missing mainExpression.english in response')
+      throw ParseError.missingRequiredFields(['mainExpression.english']);
     }
+
+    // 관련 어휘 정규화 - 잘못된 형식 필터링
+    const normalizedVocabulary = (result.relatedVocabulary || [])
+      .filter(vocab => vocab && typeof vocab === 'object')
+      .map(vocab => ({
+        word: vocab.word || '',
+        partOfSpeech: vocab.partOfSpeech || 'noun',
+        meaning: vocab.meaning || '',
+        exampleSentence: vocab.exampleSentence || '',
+      }))
+      .filter(vocab => vocab.word && vocab.word !== '-' && vocab.meaning);
 
     // 기본값 설정
     return {
@@ -110,7 +125,7 @@ export class ClaudeTranslationService implements ITranslationService {
         culturalNote: result.explanation?.culturalNote,
       },
       alternatives: result.alternatives || [],
-      relatedVocabulary: result.relatedVocabulary || [],
+      relatedVocabulary: normalizedVocabulary,
       category: result.category || '일상대화',
     }
   }

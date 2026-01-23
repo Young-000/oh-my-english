@@ -8,6 +8,7 @@ interface StreamingState {
   isLoading: boolean
   isStreaming: boolean
   streamingText: string
+  progressMessage: string // 진행 상태 메시지
   result: {
     translationResult: TranslationResult
     learningRecord: LearningRecord
@@ -19,8 +20,10 @@ interface StreamingState {
 }
 
 interface StreamEvent {
-  type: 'chunk' | 'complete' | 'error'
+  type: 'chunk' | 'complete' | 'error' | 'progress'
   content?: string
+  stage?: string
+  message?: string
   translationResult?: TranslationResult
   learningRecord?: LearningRecord
   isMock?: boolean
@@ -35,6 +38,7 @@ export function useStreamingTranslation() {
     isLoading: false,
     isStreaming: false,
     streamingText: '',
+    progressMessage: '',
     result: null,
     error: null,
     isMockMode: false,
@@ -48,6 +52,7 @@ export function useStreamingTranslation() {
         isLoading: true,
         isStreaming: true,
         streamingText: '',
+        progressMessage: '번역 준비 중...',
         result: null,
         error: null,
         isMockMode: false,
@@ -93,7 +98,12 @@ export function useStreamingTranslation() {
               try {
                 const event = JSON.parse(line.slice(6)) as StreamEvent
 
-                if (event.type === 'chunk' && event.content) {
+                if (event.type === 'progress' && event.message) {
+                  setState((prev) => ({
+                    ...prev,
+                    progressMessage: event.message!,
+                  }))
+                } else if (event.type === 'chunk' && event.content) {
                   setState((prev) => ({
                     ...prev,
                     streamingText: prev.streamingText + event.content,
@@ -136,6 +146,7 @@ export function useStreamingTranslation() {
       isLoading: false,
       isStreaming: false,
       streamingText: '',
+      progressMessage: '',
       result: null,
       error: null,
       isMockMode: false,

@@ -5,9 +5,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/infrastructure/supabase/client'
 import { Button } from '@/components/ui/button'
-import { User, LogOut, History, Brain, Settings } from 'lucide-react'
+import { User, LogOut, History, Brain, Settings, BookOpen, LayoutDashboard } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import { ThemeToggle } from './ThemeToggle'
+import { NotificationBell } from './NotificationBell'
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
@@ -54,6 +55,18 @@ export function Header() {
               <>
                 {user ? (
                   <>
+                    <Link href="/dashboard">
+                      <Button variant="ghost" size="sm">
+                        <LayoutDashboard className="h-4 w-4 mr-1" />
+                        대시보드
+                      </Button>
+                    </Link>
+                    <Link href="/vocabulary">
+                      <Button variant="ghost" size="sm">
+                        <BookOpen className="h-4 w-4 mr-1" />
+                        단어장
+                      </Button>
+                    </Link>
                     <Link href="/history">
                       <Button variant="ghost" size="sm">
                         <History className="h-4 w-4 mr-1" />
@@ -66,6 +79,7 @@ export function Header() {
                         퀴즈
                       </Button>
                     </Link>
+                    <NotificationBell />
                     <Link href="/settings">
                       <Button variant="ghost" size="icon" aria-label="설정">
                         <Settings className="h-4 w-4" />

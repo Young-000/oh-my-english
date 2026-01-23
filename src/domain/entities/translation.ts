@@ -43,7 +43,7 @@ export interface QuizAttempt {
   id: string
   userId: string
   recordId: string
-  quizType: 'korean_to_english' | 'fill_blank' | 'multiple_choice'
+  quizType: 'korean_to_english' | 'fill_blank' | 'multiple_choice' | 'matching' | 'listening' | 'sentence_ordering'
   question: string
   userAnswer: string | null
   correctAnswer: string

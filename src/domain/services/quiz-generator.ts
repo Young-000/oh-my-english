@@ -1,14 +1,23 @@
 import type { LearningRecord } from '../entities/translation'
 
-export type QuizType = 'korean_to_english' | 'fill_blank' | 'multiple_choice'
+export type QuizType = 'korean_to_english' | 'fill_blank' | 'multiple_choice' | 'matching' | 'listening' | 'sentence_ordering'
+
+export interface MatchingPair {
+  id: string
+  korean: string
+  english: string
+}
 
 export interface Quiz {
   type: QuizType
   question: string
   correctAnswer: string
-  options?: string[] // multiple_choice인 경우
+  options?: string[] // multiple_choice 또는 listening인 경우
   hint?: string
   recordId: string
+  matchingPairs?: MatchingPair[] // matching인 경우
+  audioText?: string // listening인 경우 - TTS로 읽을 영어 텍스트
+  scrambledWords?: string[] // sentence_ordering인 경우 - 섞인 단어 배열
 }
 
 export interface QuizSubmission {
@@ -78,6 +87,38 @@ export class QuizGenerator {
   }
 
   /**
+   * 문장 순서 배열 퀴즈 생성
+   * 영어 표현의 단어들을 섞어서 올바른 순서로 재배열하게 함
+   */
+  generateSentenceOrdering(record: LearningRecord): Quiz {
+    const words = record.englishExpression.split(' ')
+
+    // 2단어 이하면 korean_to_english로 대체 (섞을 의미가 없음)
+    if (words.length < 3) {
+      return this.generateKoreanToEnglish(record)
+    }
+
+    // 단어 배열을 섞음
+    const scrambledWords = this.shuffleArray([...words])
+
+    // 섞인 결과가 원본과 같으면 다시 섞음 (최대 3번 시도)
+    let attempts = 0
+    while (scrambledWords.join(' ') === words.join(' ') && attempts < 3) {
+      this.shuffleArrayInPlace(scrambledWords)
+      attempts++
+    }
+
+    return {
+      type: 'sentence_ordering',
+      question: record.koreanInput,
+      correctAnswer: record.englishExpression,
+      scrambledWords,
+      hint: `${words.length}개의 단어로 이루어진 문장`,
+      recordId: record.id,
+    }
+  }
+
+  /**
    * 객관식 퀴즈 생성
    * 정답 + 관련 어휘/대안 표현에서 오답 생성
    */
@@ -94,6 +135,58 @@ export class QuizGenerator {
       correctAnswer,
       options,
       recordId: record.id,
+    }
+  }
+
+  /**
+   * 듣기 퀴즈 생성
+   * 영어 발음을 듣고 올바른 한국어 번역을 선택
+   */
+  generateListeningQuiz(record: LearningRecord, allRecords: LearningRecord[]): Quiz {
+    const correctAnswer = record.koreanInput
+    const wrongKoreanAnswers = this.generateWrongKoreanAnswers(record, allRecords)
+
+    // 정답과 오답을 섞음
+    const options = this.shuffleArray([correctAnswer, ...wrongKoreanAnswers])
+
+    return {
+      type: 'listening',
+      question: '들리는 영어 표현의 올바른 한국어 번역을 선택하세요',
+      correctAnswer,
+      options,
+      recordId: record.id,
+      audioText: record.englishExpression, // TTS로 읽을 영어 텍스트
+    }
+  }
+
+  /**
+   * 매칭 퀴즈 생성
+   * 4개의 한국어-영어 쌍을 매칭하는 퀴즈
+   */
+  generateMatchingQuiz(records: LearningRecord[]): Quiz {
+    // 최소 4개의 레코드 필요
+    const selectedRecords = records.slice(0, 4)
+
+    if (selectedRecords.length < 4) {
+      // 4개 미만이면 단일 레코드로 korean_to_english 퀴즈 생성
+      return this.generateKoreanToEnglish(selectedRecords[0])
+    }
+
+    const pairs: MatchingPair[] = selectedRecords.map((record, index) => ({
+      id: `pair-${index}`,
+      korean: record.koreanInput,
+      english: record.englishExpression,
+    }))
+
+    // 정답 형식: "pair-0:english0,pair-1:english1,pair-2:english2,pair-3:english3"
+    const correctAnswer = pairs.map((pair) => `${pair.id}:${pair.english}`).join(',')
+
+    return {
+      type: 'matching',
+      question: '한국어와 영어 표현을 매칭하세요',
+      correctAnswer,
+      recordId: selectedRecords[0].id, // 첫 번째 레코드 ID를 대표로 사용
+      matchingPairs: pairs,
     }
   }
 
@@ -126,20 +219,32 @@ export class QuizGenerator {
         return this.generateFillBlank(record)
       case 'multiple_choice':
         return this.generateMultipleChoice(record, allRecords)
+      case 'sentence_ordering':
+        return this.generateSentenceOrdering(record)
+      case 'listening':
+        return this.generateListeningQuiz(record, allRecords)
+      case 'matching':
+        // matching은 여러 레코드가 필요하므로 별도 호출 필요, 기본값으로 korean_to_english 반환
+        return this.generateKoreanToEnglish(record)
     }
   }
 
   /**
    * 숙달도에 따른 퀴즈 타입 선택
-   * 낮은 숙달도 → 쉬운 객관식
+   * 낮은 숙달도 → 쉬운 객관식/듣기
    * 높은 숙달도 → 어려운 직접 입력
    */
   private selectQuizTypeByMastery(masteryLevel: number): QuizType {
     if (masteryLevel <= 1) {
-      return 'multiple_choice'
+      // 낮은 숙달도: multiple_choice(60%) 또는 listening(40%)
+      return Math.random() < 0.6 ? 'multiple_choice' : 'listening'
     }
     if (masteryLevel <= 3) {
-      return 'fill_blank'
+      // 중간 숙달도: fill_blank(50%), listening(30%), sentence_ordering(20%)
+      const rand = Math.random()
+      if (rand < 0.5) return 'fill_blank'
+      if (rand < 0.8) return 'listening'
+      return 'sentence_ordering'
     }
     return 'korean_to_english'
   }
@@ -265,6 +370,56 @@ export class QuizGenerator {
     return wrongAnswers.slice(0, 3)
   }
 
+  /**
+   * 한국어 오답 생성 (듣기 퀴즈용)
+   */
+  private generateWrongKoreanAnswers(
+    record: LearningRecord,
+    allRecords: LearningRecord[]
+  ): string[] {
+    const wrongAnswers: string[] = []
+    const usedAnswers = new Set([record.koreanInput.toLowerCase()])
+
+    // 1. 같은 카테고리의 다른 기록에서 한국어 오답 추출
+    const sameCategory = allRecords.filter(
+      (r) => r.id !== record.id && r.category === record.category
+    )
+    for (const other of sameCategory) {
+      if (wrongAnswers.length >= 3) break
+      if (!usedAnswers.has(other.koreanInput.toLowerCase())) {
+        wrongAnswers.push(other.koreanInput)
+        usedAnswers.add(other.koreanInput.toLowerCase())
+      }
+    }
+
+    // 2. 다른 카테고리의 기록에서 한국어 오답 추출
+    for (const other of allRecords) {
+      if (wrongAnswers.length >= 3) break
+      if (other.id !== record.id && !usedAnswers.has(other.koreanInput.toLowerCase())) {
+        wrongAnswers.push(other.koreanInput)
+        usedAnswers.add(other.koreanInput.toLowerCase())
+      }
+    }
+
+    // 3. 최소 3개를 보장하기 위한 더미 한국어 오답
+    const dummyKoreanAnswers = [
+      '알겠습니다.',
+      '감사합니다.',
+      '실례합니다.',
+      '모르겠어요.',
+      '생각해볼게요.',
+    ]
+    for (const dummy of dummyKoreanAnswers) {
+      if (wrongAnswers.length >= 3) break
+      if (!usedAnswers.has(dummy.toLowerCase())) {
+        wrongAnswers.push(dummy)
+        usedAnswers.add(dummy.toLowerCase())
+      }
+    }
+
+    return wrongAnswers.slice(0, 3)
+  }
+
   private shuffleArray<T>(array: T[]): T[] {
     const shuffled = [...array]
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -272,6 +427,13 @@ export class QuizGenerator {
       ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
     return shuffled
+  }
+
+  private shuffleArrayInPlace<T>(array: T[]): void {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[array[i], array[j]] = [array[j], array[i]]
+    }
   }
 }
 
@@ -292,6 +454,13 @@ export class QuizGrader {
         return this.gradeFillBlank(userAnswer, correctAnswer)
       case 'multiple_choice':
         return this.gradeMultipleChoice(userAnswer, correctAnswer)
+      case 'sentence_ordering':
+        return this.gradeSentenceOrdering(userAnswer, correctAnswer)
+      case 'matching':
+        return this.gradeMatching(userAnswer, correctAnswer)
+      case 'listening':
+        // listening은 객관식과 동일한 방식으로 채점 (정확히 일치해야 정답)
+        return this.gradeListening(userAnswer, correctAnswer)
     }
   }
 
@@ -392,6 +561,139 @@ export class QuizGrader {
         ? '정답입니다! 🎉'
         : `틀렸습니다. 정답은 "${correctAnswer}"입니다.`,
     }
+  }
+
+  private gradeListening(userAnswer: string, correctAnswer: string): QuizResult {
+    const isCorrect =
+      this.normalizeAnswer(userAnswer) === this.normalizeAnswer(correctAnswer)
+
+    return {
+      isCorrect,
+      correctAnswer,
+      userAnswer,
+      similarity: isCorrect ? 1 : 0,
+      feedback: isCorrect
+        ? '정답입니다! 잘 들으셨어요! 🎉'
+        : `틀렸습니다. 정답은 "${correctAnswer}"입니다.`,
+    }
+  }
+
+  /**
+   * 문장 순서 배열 퀴즈 채점
+   */
+  private gradeSentenceOrdering(userAnswer: string, correctAnswer: string): QuizResult {
+    const normalizedUser = this.normalizeAnswer(userAnswer)
+    const normalizedCorrect = this.normalizeAnswer(correctAnswer)
+
+    if (normalizedUser === normalizedCorrect) {
+      return {
+        isCorrect: true,
+        correctAnswer,
+        userAnswer,
+        similarity: 1,
+        feedback: '완벽합니다! 문장 순서를 정확히 맞췄어요! 🎉',
+      }
+    }
+
+    // 단어 순서 유사도 계산
+    const userWords = normalizedUser.split(' ')
+    const correctWords = normalizedCorrect.split(' ')
+
+    let matchCount = 0
+    const minLen = Math.min(userWords.length, correctWords.length)
+
+    for (let i = 0; i < minLen; i++) {
+      if (userWords[i] === correctWords[i]) {
+        matchCount++
+      }
+    }
+
+    const similarity = correctWords.length > 0 ? matchCount / correctWords.length : 0
+
+    if (similarity >= 0.8) {
+      return {
+        isCorrect: false,
+        correctAnswer,
+        userAnswer,
+        similarity,
+        feedback: '거의 맞았어요! 몇 단어의 순서만 다릅니다.',
+      }
+    }
+
+    return {
+      isCorrect: false,
+      correctAnswer,
+      userAnswer,
+      similarity,
+      feedback: `정답은 "${correctAnswer}"입니다. 다시 시도해보세요!`,
+    }
+  }
+
+  /**
+   * 매칭 퀴즈 채점
+   * 답변 형식: "pair-0:english0,pair-1:english1,pair-2:english2,pair-3:english3"
+   * 각 쌍의 정답 여부를 비교하여 부분 점수 산정
+   */
+  private gradeMatching(userAnswer: string, correctAnswer: string): QuizResult {
+    // 정답과 사용자 답변 파싱
+    const correctPairs = this.parseMatchingAnswer(correctAnswer)
+    const userPairs = this.parseMatchingAnswer(userAnswer)
+
+    // 매칭된 쌍 수 계산
+    let correctCount = 0
+    const totalPairs = correctPairs.size
+
+    for (const [pairId, correctEnglish] of correctPairs) {
+      const userEnglish = userPairs.get(pairId)
+      if (
+        userEnglish &&
+        this.normalizeAnswer(userEnglish) === this.normalizeAnswer(correctEnglish)
+      ) {
+        correctCount++
+      }
+    }
+
+    const similarity = totalPairs > 0 ? correctCount / totalPairs : 0
+    const isCorrect = correctCount === totalPairs
+
+    let feedback: string
+    if (isCorrect) {
+      feedback = '완벽합니다! 모든 쌍을 정확히 매칭했어요! 🎉'
+    } else if (similarity >= 0.75) {
+      feedback = `잘했어요! ${correctCount}/${totalPairs}개를 맞췄습니다.`
+    } else if (similarity >= 0.5) {
+      feedback = `${correctCount}/${totalPairs}개 정답. 조금 더 연습해보세요!`
+    } else {
+      feedback = `${correctCount}/${totalPairs}개 정답. 다시 복습해보세요!`
+    }
+
+    return {
+      isCorrect,
+      correctAnswer,
+      userAnswer,
+      similarity,
+      feedback,
+    }
+  }
+
+  /**
+   * 매칭 답변 파싱
+   * "pair-0:english0,pair-1:english1" -> Map<pairId, english>
+   */
+  private parseMatchingAnswer(answer: string): Map<string, string> {
+    const result = new Map<string, string>()
+    const pairs = answer.split(',')
+
+    for (const pair of pairs) {
+      const colonIndex = pair.indexOf(':')
+      if (colonIndex > 0) {
+        const pairId = pair.substring(0, colonIndex).trim()
+        const english = pair.substring(colonIndex + 1).trim()
+        result.set(pairId, english)
+      }
+    }
+
+    return result
   }
 
   private normalizeAnswer(answer: string): string {

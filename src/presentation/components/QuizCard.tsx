@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { CheckCircle, XCircle, HelpCircle, ArrowRight, Clock } from 'lucide-react'
+import { CheckCircle, XCircle, HelpCircle, ArrowRight, Clock, Volume2, X, RotateCcw } from 'lucide-react'
 import type { Quiz, QuizResult } from '@/domain/services/quiz-generator'
+import { MatchingQuizCard } from './MatchingQuizCard'
 
 interface QuizCardProps {
   quiz: Quiz
@@ -21,6 +22,18 @@ export function QuizCard({ quiz, onSubmit, onNext }: QuizCardProps) {
   const [showHint, setShowHint] = useState(false)
   const [startTime] = useState(Date.now())
   const [elapsedTime, setElapsedTime] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  // Sentence ordering state
+  const [selectedWords, setSelectedWords] = useState<string[]>([])
+  const [availableWords, setAvailableWords] = useState<string[]>([])
+
+  // Initialize sentence ordering words
+  useEffect(() => {
+    if (quiz.type === 'sentence_ordering' && quiz.scrambledWords) {
+      setAvailableWords([...quiz.scrambledWords])
+      setSelectedWords([])
+    }
+  }, [quiz.type, quiz.scrambledWords])
 
   useEffect(() => {
     if (result) return
@@ -36,8 +49,40 @@ export function QuizCard({ quiz, onSubmit, onNext }: QuizCardProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  const playAudio = useCallback(() => {
+    if (!quiz.audioText || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return
+    }
+
+    // 이미 재생 중이면 중지
+    if (isPlaying) {
+      window.speechSynthesis.cancel()
+      setIsPlaying(false)
+      return
+    }
+
+    const utterance = new SpeechSynthesisUtterance(quiz.audioText)
+    utterance.lang = 'en-US'
+    utterance.rate = 0.9 // 약간 느리게 재생
+
+    utterance.onstart = () => setIsPlaying(true)
+    utterance.onend = () => setIsPlaying(false)
+    utterance.onerror = () => setIsPlaying(false)
+
+    window.speechSynthesis.speak(utterance)
+  }, [quiz.audioText, isPlaying])
+
   const handleSubmit = useCallback(async () => {
-    const answer = quiz.type === 'multiple_choice' ? selectedOption : userAnswer
+    let answer: string | null = null
+
+    if (quiz.type === 'multiple_choice' || quiz.type === 'listening') {
+      answer = selectedOption
+    } else if (quiz.type === 'sentence_ordering') {
+      answer = selectedWords.join(' ')
+    } else {
+      answer = userAnswer
+    }
+
     if (!answer?.trim()) return
 
     setIsSubmitting(true)
@@ -48,7 +93,7 @@ export function QuizCard({ quiz, onSubmit, onNext }: QuizCardProps) {
     } finally {
       setIsSubmitting(false)
     }
-  }, [quiz.type, selectedOption, userAnswer, startTime, onSubmit])
+  }, [quiz.type, selectedOption, userAnswer, selectedWords, startTime, onSubmit])
 
   const handleNext = () => {
     setUserAnswer('')
@@ -130,6 +175,146 @@ export function QuizCard({ quiz, onSubmit, onNext }: QuizCardProps) {
             </div>
           </div>
         )
+
+      case 'listening':
+        return (
+          <div className="space-y-4">
+            <div className="text-center p-6 bg-muted/50 rounded-lg">
+              <p className="text-lg font-medium mb-4">{quiz.question}</p>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={playAudio}
+                className={`gap-2 ${isPlaying ? 'bg-primary text-primary-foreground' : ''}`}
+                data-testid="play-audio-button"
+              >
+                <Volume2 className={`h-5 w-5 ${isPlaying ? 'animate-pulse' : ''}`} />
+                {isPlaying ? '재생 중...' : '발음 듣기'}
+              </Button>
+              {result && quiz.audioText && (
+                <p className="mt-4 text-lg font-medium text-primary">
+                  &quot;{quiz.audioText}&quot;
+                </p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              {quiz.options?.map((option, index) => (
+                <Button
+                  key={index}
+                  variant={selectedOption === option ? 'default' : 'outline'}
+                  className={`justify-start text-left h-auto py-3 px-4 ${
+                    result
+                      ? option === quiz.correctAnswer
+                        ? 'bg-green-100 border-green-500 text-green-800 hover:bg-green-100'
+                        : selectedOption === option
+                          ? 'bg-red-100 border-red-500 text-red-800 hover:bg-red-100'
+                          : ''
+                      : ''
+                  }`}
+                  onClick={() => !result && setSelectedOption(option)}
+                  disabled={!!result || isSubmitting}
+                  data-testid={`quiz-option-${index}`}
+                >
+                  <span className="mr-2 font-medium">{String.fromCharCode(65 + index)}.</span>
+                  {option}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )
+
+      case 'sentence_ordering':
+        return (
+          <div className="space-y-4">
+            {/* Question */}
+            <div className="text-center p-6 bg-muted/50 rounded-lg">
+              <p className="text-xl font-medium">{quiz.question}</p>
+              <p className="text-sm text-muted-foreground mt-2">단어를 올바른 순서로 배열하세요</p>
+            </div>
+
+            {/* Selected words area (answer being built) */}
+            <div className="min-h-[60px] p-4 bg-primary/5 border-2 border-dashed border-primary/30 rounded-lg">
+              {selectedWords.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {selectedWords.map((word, index) => (
+                    <Button
+                      key={`selected-${index}`}
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        if (!result) {
+                          // Remove word from selected and add back to available
+                          const newSelected = [...selectedWords]
+                          newSelected.splice(index, 1)
+                          setSelectedWords(newSelected)
+                          setAvailableWords([...availableWords, word])
+                        }
+                      }}
+                      disabled={!!result || isSubmitting}
+                      className="gap-1"
+                      data-testid={`selected-word-${index}`}
+                    >
+                      {word}
+                      {!result && <X className="h-3 w-3" />}
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center">
+                  아래 단어를 클릭하여 문장을 만드세요
+                </p>
+              )}
+            </div>
+
+            {/* Available words to select */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {availableWords.map((word, index) => (
+                <Button
+                  key={`available-${index}`}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!result) {
+                      // Add word to selected and remove from available
+                      setSelectedWords([...selectedWords, word])
+                      const newAvailable = [...availableWords]
+                      newAvailable.splice(index, 1)
+                      setAvailableWords(newAvailable)
+                    }
+                  }}
+                  disabled={!!result || isSubmitting}
+                  data-testid={`available-word-${index}`}
+                >
+                  {word}
+                </Button>
+              ))}
+            </div>
+
+            {/* Reset button */}
+            {selectedWords.length > 0 && !result && (
+              <div className="flex justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (quiz.scrambledWords) {
+                      setAvailableWords([...quiz.scrambledWords])
+                      setSelectedWords([])
+                    }
+                  }}
+                  className="text-muted-foreground"
+                  data-testid="reset-words-button"
+                >
+                  <RotateCcw className="h-4 w-4 mr-1" />
+                  다시 시작
+                </Button>
+              </div>
+            )}
+          </div>
+        )
+
+      default:
+        return null
     }
   }
 
@@ -171,6 +356,11 @@ export function QuizCard({ quiz, onSubmit, onNext }: QuizCardProps) {
     )
   }
 
+  // Delegate matching quizzes to specialized component (after all hooks)
+  if (quiz.type === 'matching') {
+    return <MatchingQuizCard quiz={quiz} onSubmit={onSubmit} onNext={onNext} />
+  }
+
   return (
     <Card className="w-full max-w-xl mx-auto">
       <CardHeader className="pb-2">
@@ -179,6 +369,8 @@ export function QuizCard({ quiz, onSubmit, onNext }: QuizCardProps) {
             {quiz.type === 'korean_to_english' && '한→영 번역'}
             {quiz.type === 'fill_blank' && '빈칸 채우기'}
             {quiz.type === 'multiple_choice' && '객관식'}
+            {quiz.type === 'listening' && '듣기'}
+            {quiz.type === 'sentence_ordering' && '문장 순서 배열'}
           </CardTitle>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
@@ -213,7 +405,11 @@ export function QuizCard({ quiz, onSubmit, onNext }: QuizCardProps) {
                 onClick={handleSubmit}
                 disabled={
                   isSubmitting ||
-                  (quiz.type === 'multiple_choice' ? !selectedOption : !userAnswer.trim())
+                  (quiz.type === 'multiple_choice' || quiz.type === 'listening'
+                    ? !selectedOption
+                    : quiz.type === 'sentence_ordering'
+                      ? selectedWords.length === 0 || availableWords.length > 0
+                      : !userAnswer.trim())
                 }
                 data-testid="submit-button"
               >

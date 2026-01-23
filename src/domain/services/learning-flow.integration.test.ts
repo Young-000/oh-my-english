@@ -55,9 +55,9 @@ describe('Complete Learning Flow Simulation', () => {
         updatedAt: new Date(),
       }
 
-      // 2단계: 첫 퀴즈 생성 (숙달도 0이면 객관식)
+      // 2단계: 첫 퀴즈 생성 (숙달도 0이면 객관식 또는 듣기)
       const quiz = generator.generateRandomQuiz(record, [])
-      expect(quiz.type).toBe('multiple_choice')
+      expect(['multiple_choice', 'listening']).toContain(quiz.type)
 
       // 3단계: 정답 제출
       const submission: QuizSubmission = {
@@ -128,24 +128,26 @@ describe('Complete Learning Flow Simulation', () => {
       updatedAt: new Date(),
     })
 
-    it('should use multiple_choice for mastery 0-1', () => {
+    it('should use multiple_choice or listening for mastery 0-1', () => {
+      // Low mastery randomly selects multiple_choice (60%) or listening (40%)
       const record0 = createRecordWithMastery(0)
       const record1 = createRecordWithMastery(1)
 
-      expect(generator.generateRandomQuiz(record0, []).type).toBe('multiple_choice')
-      expect(generator.generateRandomQuiz(record1, []).type).toBe('multiple_choice')
+      expect(['multiple_choice', 'listening']).toContain(generator.generateRandomQuiz(record0, []).type)
+      expect(['multiple_choice', 'listening']).toContain(generator.generateRandomQuiz(record1, []).type)
     })
 
-    it('should use fill_blank for mastery 2-3', () => {
+    it('should use fill_blank, listening, or sentence_ordering for mastery 2-3', () => {
+      // Medium mastery randomly selects fill_blank (50%), listening (30%), or sentence_ordering (20%)
       const record2 = createRecordWithMastery(2)
       const record3 = createRecordWithMastery(3)
 
       const quiz2 = generator.generateRandomQuiz(record2, [])
       const quiz3 = generator.generateRandomQuiz(record3, [])
 
-      // fill_blank 또는 fallback인 korean_to_english
-      expect(['fill_blank', 'korean_to_english']).toContain(quiz2.type)
-      expect(['fill_blank', 'korean_to_english']).toContain(quiz3.type)
+      // fill_blank, korean_to_english (fallback), listening, or sentence_ordering
+      expect(['fill_blank', 'korean_to_english', 'listening', 'sentence_ordering']).toContain(quiz2.type)
+      expect(['fill_blank', 'korean_to_english', 'listening', 'sentence_ordering']).toContain(quiz3.type)
     })
 
     it('should use korean_to_english for mastery 4-5', () => {

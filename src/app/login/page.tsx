@@ -78,6 +78,28 @@ function LoginForm() {
     }
   }
 
+  const handleKakaoLogin = async () => {
+    setIsLoading(true)
+    setMessage(null)
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'kakao',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${redirectTo}`,
+        },
+      })
+
+      if (error) throw error
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '카카오 로그인 중 오류가 발생했습니다.',
+      })
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">
       <div className="w-full max-w-md">
@@ -101,11 +123,12 @@ function LoginForm() {
               className="w-full h-12"
               onClick={handleGoogleLogin}
               disabled={isLoading}
+              aria-label="Google 계정으로 로그인"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
-                <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                     fill="#4285F4"
@@ -125,6 +148,27 @@ function LoginForm() {
                 </svg>
               )}
               Google로 계속하기
+            </Button>
+
+            {/* 카카오 로그인 */}
+            <Button
+              variant="outline"
+              className="w-full h-12 bg-[#FEE500] hover:bg-[#FEE500]/90 border-[#FEE500] text-[#191919] hover:text-[#191919]"
+              onClick={handleKakaoLogin}
+              disabled={isLoading}
+              aria-label="카카오 계정으로 로그인"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 3C6.477 3 2 6.463 2 10.691c0 2.647 1.764 4.975 4.42 6.318-.195.724-.706 2.625-.81 3.032-.126.492.181.485.38.353.156-.103 2.486-1.688 3.494-2.372.823.12 1.672.183 2.516.183 5.523 0 10-3.463 10-7.514C22 6.463 17.523 3 12 3z"
+                    fill="#191919"
+                  />
+                </svg>
+              )}
+              카카오로 계속하기
             </Button>
 
             <div className="relative">
@@ -158,6 +202,14 @@ function LoginForm() {
                 ) : null}
                 이메일로 로그인 링크 받기
               </Button>
+              <div className="text-center">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  비밀번호를 잊으셨나요?
+                </Link>
+              </div>
             </form>
 
             {/* 메시지 */}

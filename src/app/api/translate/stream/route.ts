@@ -1,11 +1,26 @@
-import { NextRequest } from 'next/server'
-import { ClaudeTranslationService } from '@/infrastructure/ai/claude-service'
-import { TranslationCache } from '@/infrastructure/cache/translation-cache'
-import { SupabaseLearningRecordRepository } from '@/infrastructure/supabase/learning-record-repository'
-import { createServerSupabaseClient } from '@/infrastructure/supabase/server'
-import { withRateLimit } from '@/infrastructure/rate-limit'
-import type { TargetType, SituationType } from '@/presentation/components/TranslationInput'
-import type { LearningRecord, TranslationResult } from '@/domain/entities/translation'
+import { NextRequest } from 'next/server';
+import { ClaudeTranslationService } from '@/infrastructure/ai/claude-service';
+import { TranslationCache } from '@/infrastructure/cache/translation-cache';
+import { SupabaseLearningRecordRepository } from '@/infrastructure/supabase/learning-record-repository';
+import { createServerSupabaseClient } from '@/infrastructure/supabase/server';
+import { withRateLimit } from '@/infrastructure/rate-limit';
+import {
+  ValidationError,
+  RateLimitError,
+  isTranslationError,
+} from '@/domain/errors/translation-errors';
+import {
+  formatErrorResponse,
+  formatStreamError,
+  logError,
+  handleAnthropicError,
+} from '@/infrastructure/errors/error-handler';
+import type { TargetType, SituationType } from '@/presentation/components/TranslationInput';
+import type { LearningRecord, TranslationResult } from '@/domain/entities/translation';
+
+// Edge Runtime for lower latency
+export const runtime = 'edge';
+export const preferredRegion = ['icn1']; // Seoul region
 
 // API 키가 유효한지 확인
 function isValidApiKey(): boolean {
@@ -61,33 +76,61 @@ function createLearningRecord(
 
 export async function POST(request: NextRequest) {
   // Rate Limiting 체크
-  const rateLimitResponse = withRateLimit(request, 'translation')
+  const rateLimitResponse = withRateLimit(request, 'translation');
   if (rateLimitResponse) {
-    return rateLimitResponse
+    // Rate limit 에러를 구조화된 응답으로 변환
+    const rateLimitError = new RateLimitError(20, 60000);
+    logError(rateLimitError, { endpoint: '/api/translate/stream' });
+    const { response, statusCode } = formatErrorResponse(rateLimitError);
+    return new Response(JSON.stringify(response), {
+      status: statusCode,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': String(rateLimitError.getRetryAfterSeconds()),
+      },
+    });
   }
 
-  const encoder = new TextEncoder()
+  const encoder = new TextEncoder();
 
   try {
-    const body = await request.json()
+    const body = await request.json();
     const { koreanInput, target = 'adult', situation = 'casual' } = body as {
-      koreanInput: string
-      target?: TargetType
-      situation?: SituationType
-    }
+      koreanInput: string;
+      target?: TargetType;
+      situation?: SituationType;
+    };
 
+    // 입력 검증
     if (!koreanInput || typeof koreanInput !== 'string') {
-      return new Response(
-        JSON.stringify({ error: 'koreanInput is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+      const error = ValidationError.emptyInput();
+      logError(error, { endpoint: '/api/translate/stream' });
+      const { response, statusCode } = formatErrorResponse(error);
+      return new Response(JSON.stringify(response), {
+        status: statusCode,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    if (koreanInput.length > 500) {
-      return new Response(
-        JSON.stringify({ error: 'koreanInput is too long (max 500 characters)' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+    if (koreanInput.trim().length === 0) {
+      const error = ValidationError.emptyInput();
+      logError(error, { endpoint: '/api/translate/stream' });
+      const { response, statusCode } = formatErrorResponse(error);
+      return new Response(JSON.stringify(response), {
+        status: statusCode,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const MAX_INPUT_LENGTH = 500;
+    if (koreanInput.length > MAX_INPUT_LENGTH) {
+      const error = ValidationError.tooLong(MAX_INPUT_LENGTH, koreanInput.length);
+      logError(error, { endpoint: '/api/translate/stream', inputLength: koreanInput.length });
+      const { response, statusCode } = formatErrorResponse(error);
+      return new Response(JSON.stringify(response), {
+        status: statusCode,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const hasValidApiKey = isValidApiKey()
@@ -157,15 +200,29 @@ export async function POST(request: NextRequest) {
             return
           }
 
-          // Claude API - 빠른 응답을 위해 직접 호출 (딜레이 없음)
+          // Claude API with streaming progress events
           const translationService = new ClaudeTranslationService()
           const contextInfo = buildContextInfo(target, situation)
 
-          // 빠른 번역 실행 (스트리밍 효과 없이 즉시 결과 전송)
+          // 진행 상태 이벤트 전송 - 사용자에게 번역 중임을 알림
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: 'progress', stage: 'translating', message: '번역 중...' })}\n\n`
+            )
+          )
+
+          // 빠른 번역 실행
           const translationResult = await translationService.translate({
             koreanInput,
             context: contextInfo,
           })
+
+          // 분석 완료 알림
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: 'progress', stage: 'analyzing', message: '표현 분석 중...' })}\n\n`
+            )
+          )
 
           // 캐시에 저장
           const cache = new TranslationCache(supabase)
@@ -198,15 +255,21 @@ export async function POST(request: NextRequest) {
             )
           )
         } catch (error) {
-          console.error('Streaming error:', error)
+          // 에러 변환 및 로깅
+          const translationError = isTranslationError(error)
+            ? error
+            : handleAnthropicError(error);
+
+          logError(translationError, {
+            endpoint: '/api/translate/stream',
+            method: 'POST',
+            streaming: true,
+          });
+
+          const streamError = formatStreamError(translationError);
           controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: 'error',
-                error: error instanceof Error ? error.message : 'Unknown error',
-              })}\n\n`
-            )
-          )
+            encoder.encode(`data: ${JSON.stringify(streamError)}\n\n`)
+          );
         } finally {
           controller.close()
         }
@@ -221,10 +284,20 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Request error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+    // 에러 변환 및 로깅
+    const translationError = isTranslationError(error)
+      ? error
+      : handleAnthropicError(error);
+
+    logError(translationError, {
+      endpoint: '/api/translate/stream',
+      method: 'POST',
+    });
+
+    const { response, statusCode } = formatErrorResponse(translationError);
+    return new Response(JSON.stringify(response), {
+      status: statusCode,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

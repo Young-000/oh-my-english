@@ -55,9 +55,9 @@ describe('Quiz Session Performance', () => {
         quizTypes.push(quiz.type)
       }
 
-      // 마스터리 0은 주로 multiple_choice
-      const multipleChoiceCount = quizTypes.filter((t) => t === 'multiple_choice').length
-      expect(multipleChoiceCount).toBeGreaterThanOrEqual(15) // 75% 이상
+      // 마스터리 0은 주로 multiple_choice(60%) 또는 listening(40%)
+      const multipleChoiceOrListeningCount = quizTypes.filter((t) => t === 'multiple_choice' || t === 'listening').length
+      expect(multipleChoiceOrListeningCount).toBeGreaterThanOrEqual(15) // 75% 이상
     })
 
     it('should maintain correct answer consistency across multiple generations', () => {
@@ -156,6 +156,9 @@ describe('Quiz Session Performance', () => {
         multiple_choice: 0,
         fill_blank: 0,
         korean_to_english: 0,
+        matching: 0,
+        listening: 0,
+        sentence_ordering: 0,
       }
 
       // 각 마스터리 레벨에서 10개씩 생성
@@ -346,6 +349,9 @@ describe('Quiz Session State Tracking', () => {
         multiple_choice: 0,
         fill_blank: 0,
         korean_to_english: 0,
+        matching: 0,
+        listening: 0,
+        sentence_ordering: 0,
       },
     }
   }
@@ -467,9 +473,11 @@ describe('Quiz Generation with Empty Data', () => {
 
     const quiz = generator.generateRandomQuiz(record, [])
     expect(quiz).toBeDefined()
-    // fill_blank인 경우 단어가 정답, 아니면 전체 표현이 정답
+    // fill_blank인 경우 단어가 정답, listening인 경우 한국어가 정답, 아니면 전체 표현이 정답
     if (quiz.type === 'fill_blank') {
       expect(record.englishExpression.toLowerCase()).toContain(quiz.correctAnswer.toLowerCase())
+    } else if (quiz.type === 'listening') {
+      expect(quiz.correctAnswer).toBe('테스트')
     } else {
       expect(quiz.correctAnswer).toBe('This is a test expression')
     }
@@ -496,7 +504,12 @@ describe('Quiz Generation with Empty Data', () => {
     for (let i = 0; i < 10; i++) {
       const quiz = generator.generateRandomQuiz(minimalRecord, [])
       expect(quiz.type).toBeDefined()
-      expect(quiz.correctAnswer).toBe('Hello')
+      // listening인 경우 한국어가 정답, 아니면 영어가 정답
+      if (quiz.type === 'listening') {
+        expect(quiz.correctAnswer).toBe('안녕')
+      } else {
+        expect(quiz.correctAnswer).toBe('Hello')
+      }
     }
   })
 })

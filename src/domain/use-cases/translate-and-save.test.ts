@@ -62,6 +62,7 @@ describe('TranslateAndSaveUseCase', () => {
       create: vi.fn().mockResolvedValue(mockLearningRecord),
       findById: vi.fn(),
       findByUserId: vi.fn(),
+      findByUserIdWithCount: vi.fn(),
       findDueForReview: vi.fn(),
       update: vi.fn(),
       updateMasteryLevel: vi.fn(),

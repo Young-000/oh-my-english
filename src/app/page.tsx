@@ -14,6 +14,7 @@ export default function Home() {
     isLoading,
     isStreaming,
     streamingText,
+    progressMessage,
     result,
     error,
     isMockMode,
@@ -97,7 +98,7 @@ export default function Home() {
                   <div className="h-32 bg-muted rounded-lg" />
                   <div className="h-24 bg-muted rounded-lg" />
                 </div>
-                <p className="mt-4 text-sm">번역 준비 중...</p>
+                <p className="mt-4 text-sm">{progressMessage || '번역 준비 중...'}</p>
               </div>
             )}
           </div>

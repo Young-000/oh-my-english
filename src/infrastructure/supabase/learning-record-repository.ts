@@ -3,6 +3,7 @@ import type {
   ILearningRecordRepository,
   CreateLearningRecordInput,
   LearningRecordFilters,
+  LearningRecordWithCount,
 } from '@/domain/repositories/learning-record-repository'
 import type { LearningRecord } from '@/domain/entities/translation'
 import type { Database } from './types'
@@ -76,6 +77,14 @@ export class SupabaseLearningRecordRepository implements ILearningRecordReposito
       )
     }
 
+    if (filters.startDate) {
+      query = query.gte('created_at', filters.startDate.toISOString())
+    }
+
+    if (filters.endDate) {
+      query = query.lte('created_at', filters.endDate.toISOString())
+    }
+
     if (filters.limit) {
       query = query.limit(filters.limit)
     }
@@ -88,6 +97,53 @@ export class SupabaseLearningRecordRepository implements ILearningRecordReposito
 
     if (error) throw error
     return ((data ?? []) as LearningRecordRow[]).map(this.mapToEntity)
+  }
+
+  async findByUserIdWithCount(filters: LearningRecordFilters): Promise<LearningRecordWithCount> {
+    let query = this.supabase
+      .schema(SCHEMA)
+      .from('learning_records')
+      .select('*', { count: 'exact' })
+      .eq('user_id', filters.userId)
+      .order('created_at', { ascending: false })
+
+    if (filters.category) {
+      query = query.eq('category', filters.category)
+    }
+
+    if (filters.isBookmarked !== undefined) {
+      query = query.eq('is_bookmarked', filters.isBookmarked)
+    }
+
+    if (filters.masteryLevel !== undefined) {
+      query = query.eq('mastery_level', filters.masteryLevel)
+    }
+
+    if (filters.searchQuery) {
+      query = query.or(
+        `korean_input.ilike.%${filters.searchQuery}%,english_expression.ilike.%${filters.searchQuery}%`
+      )
+    }
+
+    if (filters.startDate) {
+      query = query.gte('created_at', filters.startDate.toISOString())
+    }
+
+    if (filters.endDate) {
+      query = query.lte('created_at', filters.endDate.toISOString())
+    }
+
+    const limit = filters.limit || 10
+    const offset = filters.offset || 0
+    query = query.range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
+
+    if (error) throw error
+    return {
+      records: ((data ?? []) as LearningRecordRow[]).map(this.mapToEntity),
+      total: count ?? 0,
+    }
   }
 
   async findDueForReview(userId: string, limit = 10): Promise<LearningRecord[]> {

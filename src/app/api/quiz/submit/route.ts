@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'recordId is required' }, { status: 400 })
     }
 
-    if (!quizType || !['korean_to_english', 'fill_blank', 'multiple_choice'].includes(quizType)) {
+    if (!quizType || !['korean_to_english', 'fill_blank', 'multiple_choice', 'listening', 'matching', 'sentence_ordering'].includes(quizType)) {
       return NextResponse.json({ error: 'Valid quizType is required' }, { status: 400 })
     }
 

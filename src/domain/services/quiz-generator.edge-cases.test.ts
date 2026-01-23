@@ -205,46 +205,50 @@ describe('QuizGenerator Edge Cases', () => {
   })
 
   describe('Mastery-based quiz type selection', () => {
-    it('should generate multiple_choice for mastery level 0', () => {
+    it('should generate multiple_choice or listening for mastery level 0', () => {
+      // Low mastery randomly selects multiple_choice (60%) or listening (40%)
       const record = createRecord({ masteryLevel: 0 })
       const quiz = generator.generateRandomQuiz(record, [])
-      expect(quiz.type).toBe('multiple_choice')
+      expect(['multiple_choice', 'listening']).toContain(quiz.type)
     })
 
-    it('should generate multiple_choice for mastery level 1', () => {
+    it('should generate multiple_choice or listening for mastery level 1', () => {
+      // Low mastery randomly selects multiple_choice (60%) or listening (40%)
       const record = createRecord({ masteryLevel: 1 })
       const quiz = generator.generateRandomQuiz(record, [])
-      expect(quiz.type).toBe('multiple_choice')
+      expect(['multiple_choice', 'listening']).toContain(quiz.type)
     })
 
-    it('should generate fill_blank for mastery level 2 (with long enough expression)', () => {
+    it('should generate fill_blank, listening, or sentence_ordering for mastery level 2 (with long enough expression)', () => {
       // fill_blank requires 3+ words, otherwise falls back to korean_to_english
+      // Medium mastery randomly selects fill_blank (50%), listening (30%), or sentence_ordering (20%)
       const record = createRecord({
         masteryLevel: 2,
         englishExpression: 'What do you want to eat',
       })
       const quiz = generator.generateRandomQuiz(record, [])
-      expect(quiz.type).toBe('fill_blank')
+      expect(['fill_blank', 'korean_to_english', 'listening', 'sentence_ordering']).toContain(quiz.type)
     })
 
-    it('should fallback to korean_to_english for mastery level 2 with short expression', () => {
-      // 2-word expression triggers fallback
+    it('should generate listening, sentence_ordering, or korean_to_english for mastery level 2 with short expression', () => {
+      // 2-word expression triggers fallback for fill_blank, but listening/sentence_ordering work for any length
       const record = createRecord({
         masteryLevel: 2,
         englishExpression: 'Hello there',
       })
       const quiz = generator.generateRandomQuiz(record, [])
-      // Short expression: fallback to korean_to_english
-      expect(quiz.type).toBe('korean_to_english')
+      // Medium mastery can randomly select listening/sentence_ordering which work for short expressions
+      expect(['korean_to_english', 'listening', 'sentence_ordering']).toContain(quiz.type)
     })
 
-    it('should generate fill_blank for mastery level 3 (with long enough expression)', () => {
+    it('should generate fill_blank, listening, or sentence_ordering for mastery level 3 (with long enough expression)', () => {
+      // Medium mastery randomly selects fill_blank (50%), listening (30%), or sentence_ordering (20%)
       const record = createRecord({
         masteryLevel: 3,
         englishExpression: 'The weather is really nice today',
       })
       const quiz = generator.generateRandomQuiz(record, [])
-      expect(quiz.type).toBe('fill_blank')
+      expect(['fill_blank', 'korean_to_english', 'listening', 'sentence_ordering']).toContain(quiz.type)
     })
 
     it('should generate korean_to_english for mastery level 4', () => {

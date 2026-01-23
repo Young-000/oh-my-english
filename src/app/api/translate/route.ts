@@ -1,12 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { ClaudeTranslationService } from '@/infrastructure/ai/claude-service'
-import { SupabaseLearningRecordRepository } from '@/infrastructure/supabase/learning-record-repository'
-import { createServerSupabaseClient } from '@/infrastructure/supabase/server'
-import { generateMockTranslation } from '@/lib/mock/translation-mock'
-import { lookupExpression } from '@/infrastructure/vocabulary/vocabulary-lookup-service'
-import type { TargetType, SituationType } from '@/presentation/components/TranslationInput'
-import type { LearningRecord } from '@/domain/entities/translation'
-import type { TranslationResult } from '@/domain/entities/translation'
+import { NextRequest, NextResponse } from 'next/server';
+import { ClaudeTranslationService } from '@/infrastructure/ai/claude-service';
+import { SupabaseLearningRecordRepository } from '@/infrastructure/supabase/learning-record-repository';
+import { createServerSupabaseClient } from '@/infrastructure/supabase/server';
+import { generateMockTranslation } from '@/lib/mock/translation-mock';
+import { lookupExpression } from '@/infrastructure/vocabulary/vocabulary-lookup-service';
+import {
+  ValidationError,
+  isTranslationError,
+} from '@/domain/errors/translation-errors';
+import {
+  formatErrorResponse,
+  logError,
+  handleAnthropicError,
+} from '@/infrastructure/errors/error-handler';
+import type { TargetType, SituationType } from '@/presentation/components/TranslationInput';
+import type { LearningRecord } from '@/domain/entities/translation';
+import type { TranslationResult } from '@/domain/entities/translation';
 
 // API 키가 유효한지 확인
 function isValidApiKey(): boolean {
@@ -27,12 +36,27 @@ export async function POST(request: NextRequest) {
       situation?: SituationType
     }
 
+    // 입력 검증
     if (!koreanInput || typeof koreanInput !== 'string') {
-      return NextResponse.json({ error: 'koreanInput is required' }, { status: 400 })
+      const error = ValidationError.emptyInput();
+      logError(error, { endpoint: '/api/translate' });
+      const { response, statusCode } = formatErrorResponse(error);
+      return NextResponse.json(response, { status: statusCode });
     }
 
-    if (koreanInput.length > 500) {
-      return NextResponse.json({ error: 'koreanInput is too long (max 500 characters)' }, { status: 400 })
+    if (koreanInput.trim().length === 0) {
+      const error = ValidationError.emptyInput();
+      logError(error, { endpoint: '/api/translate' });
+      const { response, statusCode } = formatErrorResponse(error);
+      return NextResponse.json(response, { status: statusCode });
+    }
+
+    const MAX_INPUT_LENGTH = 500;
+    if (koreanInput.length > MAX_INPUT_LENGTH) {
+      const error = ValidationError.tooLong(MAX_INPUT_LENGTH, koreanInput.length);
+      logError(error, { endpoint: '/api/translate', inputLength: koreanInput.length });
+      const { response, statusCode } = formatErrorResponse(error);
+      return NextResponse.json(response, { status: statusCode });
     }
 
     // API 키 유효성 체크
@@ -168,13 +192,18 @@ export async function POST(request: NextRequest) {
       isLoggedIn: !!user,
     })
   } catch (error) {
-    console.error('Translation error:', error)
+    // 에러 변환 및 로깅
+    const translationError = isTranslationError(error)
+      ? error
+      : handleAnthropicError(error);
 
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    logError(translationError, {
+      endpoint: '/api/translate',
+      method: 'POST',
+    });
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const { response, statusCode } = formatErrorResponse(translationError);
+    return NextResponse.json(response, { status: statusCode });
   }
 }
 

@@ -54,6 +54,7 @@ describe('SubmitQuizAnswerUseCase', () => {
       create: vi.fn(),
       findById: vi.fn().mockResolvedValue(mockLearningRecord),
       findByUserId: vi.fn(),
+      findByUserIdWithCount: vi.fn(),
       findDueForReview: vi.fn(),
       update: vi.fn().mockImplementation((id, data) => ({
         ...mockLearningRecord,
