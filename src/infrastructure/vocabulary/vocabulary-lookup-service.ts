@@ -19,7 +19,8 @@ interface VocabularyBookJoin {
 interface VocabularyItemWithBook {
   korean_expression: string
   english_expression: string
-  pronunciation_guide: string | null
+  target_audience: string | null
+  formality: 'casual' | 'neutral' | 'formal'
   context_explanation: string | null
   difficulty_level: number
   vocabulary_books: VocabularyBookJoin | null
@@ -28,7 +29,8 @@ interface VocabularyItemWithBook {
 export interface VocabularyMatch {
   korean_expression: string
   english_expression: string
-  pronunciation_guide: string | null
+  target_audience: string | null
+  formality: 'casual' | 'neutral' | 'formal'
   context_explanation: string | null
   difficulty_level: number
   book_title: string
@@ -41,7 +43,8 @@ export interface TranslationFromVocabulary {
   data: {
     english: string
     korean: string
-    pronunciation: string | null
+    targetAudience: string | null
+    formality: 'casual' | 'neutral' | 'formal'
     explanation: string | null
     alternatives: VocabularyMatch[]
     category: string
@@ -73,7 +76,8 @@ export async function lookupExpression(
     .select(`
       korean_expression,
       english_expression,
-      pronunciation_guide,
+      target_audience,
+      formality,
       context_explanation,
       difficulty_level,
       vocabulary_books!inner (
@@ -96,7 +100,8 @@ export async function lookupExpression(
       data: {
         english: exactMatch.english_expression,
         korean: exactMatch.korean_expression,
-        pronunciation: exactMatch.pronunciation_guide,
+        targetAudience: typedExact.target_audience,
+        formality: typedExact.formality || 'neutral',
         explanation: exactMatch.context_explanation,
         alternatives,
         category: typedExact.vocabulary_books?.category || 'general'
@@ -111,7 +116,8 @@ export async function lookupExpression(
     .select(`
       korean_expression,
       english_expression,
-      pronunciation_guide,
+      target_audience,
+      formality,
       context_explanation,
       difficulty_level,
       vocabulary_books!inner (
@@ -133,7 +139,8 @@ export async function lookupExpression(
     const alternatives = sorted.slice(1).map(item => ({
       korean_expression: item.korean_expression,
       english_expression: item.english_expression,
-      pronunciation_guide: item.pronunciation_guide,
+      target_audience: item.target_audience,
+      formality: item.formality || 'neutral',
       context_explanation: item.context_explanation,
       difficulty_level: item.difficulty_level,
       book_title: item.vocabulary_books?.title || '',
@@ -146,7 +153,8 @@ export async function lookupExpression(
       data: {
         english: best.english_expression,
         korean: best.korean_expression,
-        pronunciation: best.pronunciation_guide,
+        targetAudience: best.target_audience,
+        formality: best.formality || 'neutral',
         explanation: best.context_explanation,
         alternatives,
         category: best.vocabulary_books?.category || 'general'
@@ -178,7 +186,8 @@ async function findSimilarExpressions(
     .select(`
       korean_expression,
       english_expression,
-      pronunciation_guide,
+      target_audience,
+      formality,
       context_explanation,
       difficulty_level,
       vocabulary_books!inner (
@@ -196,7 +205,8 @@ async function findSimilarExpressions(
   return typedData.map(item => ({
     korean_expression: item.korean_expression,
     english_expression: item.english_expression,
-    pronunciation_guide: item.pronunciation_guide,
+    target_audience: item.target_audience,
+    formality: item.formality || 'neutral',
     context_explanation: item.context_explanation,
     difficulty_level: item.difficulty_level,
     book_title: item.vocabulary_books?.title || '',
@@ -221,7 +231,8 @@ export async function batchLookupExpressions(
     .select(`
       korean_expression,
       english_expression,
-      pronunciation_guide,
+      target_audience,
+      formality,
       context_explanation,
       difficulty_level,
       vocabulary_books!inner (
@@ -254,7 +265,8 @@ export async function batchLookupExpressions(
         data: {
           english: found.english_expression,
           korean: found.korean_expression,
-          pronunciation: found.pronunciation_guide,
+          targetAudience: found.target_audience,
+          formality: found.formality || 'neutral',
           explanation: found.context_explanation,
           alternatives: [],
           category: found.vocabulary_books?.category || 'general'
@@ -283,7 +295,8 @@ export async function getRandomExpressions(
     .select(`
       korean_expression,
       english_expression,
-      pronunciation_guide,
+      target_audience,
+      formality,
       context_explanation,
       difficulty_level,
       vocabulary_books!inner (
@@ -316,7 +329,8 @@ export async function getRandomExpressions(
   return typedData.map(item => ({
     korean_expression: item.korean_expression,
     english_expression: item.english_expression,
-    pronunciation_guide: item.pronunciation_guide,
+    target_audience: item.target_audience,
+    formality: item.formality || 'neutral',
     context_explanation: item.context_explanation,
     difficulty_level: item.difficulty_level,
     book_title: item.vocabulary_books?.title || '',

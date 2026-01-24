@@ -99,16 +99,19 @@ export async function POST(request: NextRequest) {
       const translationResult: TranslationResult = {
         mainExpression: {
           english: vocabData.english,
-          formality: situation === 'formal' ? 'formal' : 'casual',
+          formality: vocabData.formality,
+          targetAudience: vocabData.targetAudience || undefined,
         },
         alternatives: vocabData.alternatives.map(alt => ({
           expression: alt.english_expression,
           situation: alt.context_explanation || 'similar expression',
           difference: alt.context_explanation || '',
+          formality: alt.formality,
+          targetAudience: alt.target_audience || undefined,
         })),
         explanation: {
           context: vocabData.explanation || '단어장에서 제공하는 표현입니다.',
-          nuance: vocabData.pronunciation ? `발음: ${vocabData.pronunciation}` : '',
+          nuance: '일상에서 자연스럽게 쓸 수 있어요.',
         },
         relatedVocabulary: [],
         category: vocabData.category,

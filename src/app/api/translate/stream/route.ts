@@ -4,6 +4,7 @@ import { TranslationCache } from '@/infrastructure/cache/translation-cache';
 import { SupabaseLearningRecordRepository } from '@/infrastructure/supabase/learning-record-repository';
 import { createServerSupabaseClient } from '@/infrastructure/supabase/server';
 import { withRateLimit } from '@/infrastructure/rate-limit';
+import { lookupExpression } from '@/infrastructure/vocabulary/vocabulary-lookup-service';
 import {
   ValidationError,
   RateLimitError,
@@ -17,6 +18,19 @@ import {
 } from '@/infrastructure/errors/error-handler';
 import type { TargetType, SituationType } from '@/presentation/components/TranslationInput';
 import type { LearningRecord, TranslationResult } from '@/domain/entities/translation';
+
+// target을 한글 대상으로 변환
+function getTargetAudienceLabel(target: TargetType): string {
+  const map: Record<TargetType, string> = {
+    child: '어린이',
+    adult: '성인',
+    colleague: '직장동료',
+    boss: '상사',
+    stranger: '처음 만난 사람',
+    friend: '친구',
+  }
+  return map[target] || '성인'
+}
 
 // Edge Runtime for lower latency
 export const runtime = 'edge';
@@ -134,7 +148,65 @@ export async function POST(request: NextRequest) {
     }
 
     const hasValidApiKey = isValidApiKey()
-    const supabase = await createServerSupabaseClient()
+
+    // 🚀 병렬 실행: Vocabulary Lookup + Supabase 클라이언트 생성
+    const [vocabularyResult, supabase] = await Promise.all([
+      lookupExpression(koreanInput).catch(() => ({ found: false as const })),
+      createServerSupabaseClient(),
+    ])
+
+    // 🚀 Vocabulary에서 찾으면 즉시 반환 (가장 빠름 ~100ms)
+    if (vocabularyResult.found) {
+      const { data: vocabData } = vocabularyResult
+      const translationResult: TranslationResult = {
+        mainExpression: {
+          english: vocabData.english,
+          formality: vocabData.formality,
+          targetAudience: vocabData.targetAudience || getTargetAudienceLabel(target),
+        },
+        explanation: {
+          context: vocabData.explanation || '자주 사용되는 표현입니다.',
+          nuance: '일상에서 자연스럽게 쓸 수 있어요.',
+        },
+        alternatives: vocabData.alternatives.map(alt => ({
+          expression: alt.english_expression,
+          situation: alt.context_explanation || '다른 상황에서',
+          difference: '뉘앙스가 조금 달라요',
+          formality: alt.formality,
+          targetAudience: alt.target_audience || undefined,
+        })),
+        relatedVocabulary: [],
+        category: vocabData.category || '일상대화',
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      const learningRecord = user
+        ? await new SupabaseLearningRecordRepository(supabase).create({
+            userId: user.id,
+            koreanInput,
+            translationResult,
+          })
+        : createLearningRecord('anonymous', koreanInput, translationResult)
+
+      return new Response(
+        `data: ${JSON.stringify({
+          type: 'complete',
+          translationResult,
+          learningRecord,
+          isMock: false,
+          isLoggedIn: !!user,
+          fromVocabulary: true,
+        })}\n\n`,
+        {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        }
+      )
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
 
     // 캐시 확인 (API 키가 유효할 때만)
