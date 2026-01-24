@@ -8,7 +8,8 @@ interface VocabularyItem {
   book_id: string
   korean_expression: string
   english_expression: string
-  pronunciation_guide: string | null
+  target_audience: string | null
+  formality: 'casual' | 'neutral' | 'formal'
   context_explanation: string | null
 }
 

@@ -9,6 +9,7 @@ interface MockTranslationData {
   mainExpression: {
     english: string
     formality: 'casual' | 'neutral' | 'formal'
+    targetAudience?: string
   }
   explanation: {
     context: string
@@ -19,6 +20,8 @@ interface MockTranslationData {
     expression: string
     situation: string
     difference: string
+    formality?: 'casual' | 'neutral' | 'formal'
+    targetAudience?: string
   }>
   relatedVocabulary: Array<{
     word: string
@@ -305,12 +308,29 @@ export function generateMockTranslation(
     mockData = DEFAULT_RESPONSE[situation]
   }
 
+  // target에 따른 targetAudience 매핑
+  const targetAudienceMap: Record<TargetType, string> = {
+    child: '어린이',
+    adult: '성인',
+    colleague: '직장동료',
+    boss: '상사',
+    stranger: '처음 만난 사람',
+    friend: '친구',
+  }
+
   return {
-    mainExpression: mockData.mainExpression,
+    mainExpression: {
+      ...mockData.mainExpression,
+      targetAudience: mockData.mainExpression.targetAudience || targetAudienceMap[target],
+    },
     explanation: mockData.explanation,
-    alternatives: mockData.alternatives,
+    alternatives: mockData.alternatives.map(alt => ({
+      ...alt,
+      formality: alt.formality || (situation === 'formal' ? 'formal' : 'casual'),
+      targetAudience: alt.targetAudience || targetAudienceMap[target],
+    })),
     relatedVocabulary: mockData.relatedVocabulary,
-    category: situation === 'formal' ? 'business' : 'daily',
+    category: situation === 'formal' ? '비즈니스' : '일상대화',
   }
 }
 

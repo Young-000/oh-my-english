@@ -2,6 +2,7 @@ export interface TranslationResult {
   mainExpression: {
     english: string
     formality: 'casual' | 'neutral' | 'formal'
+    targetAudience?: string  // 친구, 직장동료, 고객, 어르신 등
   }
   explanation: {
     context: string
@@ -12,6 +13,8 @@ export interface TranslationResult {
     expression: string
     situation: string
     difference: string
+    formality?: 'casual' | 'neutral' | 'formal'
+    targetAudience?: string
   }>
   relatedVocabulary: Array<{
     word: string

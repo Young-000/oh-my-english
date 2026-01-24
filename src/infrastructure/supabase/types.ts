@@ -273,7 +273,8 @@ export interface Database {
           book_id: string
           korean_expression: string
           english_expression: string
-          pronunciation_guide: string | null
+          target_audience: string | null
+          formality: 'casual' | 'neutral' | 'formal'
           context_explanation: string | null
           usage_examples: Array<{ korean: string; english: string }>
           alternatives: Array<{ expression: string; situation: string; difference: string }>
@@ -287,7 +288,8 @@ export interface Database {
           book_id: string
           korean_expression: string
           english_expression: string
-          pronunciation_guide?: string | null
+          target_audience?: string | null
+          formality?: 'casual' | 'neutral' | 'formal'
           context_explanation?: string | null
           usage_examples?: Array<{ korean: string; english: string }>
           alternatives?: Array<{ expression: string; situation: string; difference: string }>
@@ -301,7 +303,8 @@ export interface Database {
           book_id?: string
           korean_expression?: string
           english_expression?: string
-          pronunciation_guide?: string | null
+          target_audience?: string | null
+          formality?: 'casual' | 'neutral' | 'formal'
           context_explanation?: string | null
           usage_examples?: Array<{ korean: string; english: string }>
           alternatives?: Array<{ expression: string; situation: string; difference: string }>

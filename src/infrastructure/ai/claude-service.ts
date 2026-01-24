@@ -113,18 +113,28 @@ export class ClaudeTranslationService implements ITranslationService {
       }))
       .filter(vocab => vocab.word && vocab.word !== '-' && vocab.meaning);
 
+    // 대안 표현 정규화 - formality와 targetAudience 포함
+    const normalizedAlternatives = (result.alternatives || []).map(alt => ({
+      expression: alt.expression || '',
+      situation: alt.situation || '',
+      difference: alt.difference || '',
+      formality: alt.formality,
+      targetAudience: alt.targetAudience,
+    })).filter(alt => alt.expression);
+
     // 기본값 설정
     return {
       mainExpression: {
         english: result.mainExpression.english,
         formality: result.mainExpression.formality || 'neutral',
+        targetAudience: result.mainExpression.targetAudience,
       },
       explanation: {
         context: result.explanation?.context || '',
         nuance: result.explanation?.nuance || '',
         culturalNote: result.explanation?.culturalNote,
       },
-      alternatives: result.alternatives || [],
+      alternatives: normalizedAlternatives,
       relatedVocabulary: normalizedVocabulary,
       category: result.category || '일상대화',
     }

@@ -77,7 +77,7 @@ export function TranslationResultCard({
               <p className="text-2xl font-semibold text-primary">
                 {result.mainExpression.english}
               </p>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                     formalityColors[result.mainExpression.formality]
@@ -85,6 +85,11 @@ export function TranslationResultCard({
                 >
                   {formalityLabels[result.mainExpression.formality]}
                 </span>
+                {result.mainExpression.targetAudience && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    👤 {result.mainExpression.targetAudience}
+                  </span>
+                )}
                 <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                   {result.category}
                 </span>
@@ -137,22 +142,41 @@ export function TranslationResultCard({
         </CardContent>
       </Card>
 
-      {/* 대안 표현 */}
+      {/* 대안 표현 - 강조 */}
       {result.alternatives.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="pb-2 bg-primary/5">
             <CardTitle className="text-base flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
-              다른 표현들
+              <RefreshCw className="h-4 w-4 text-primary" />
+              <span className="text-primary">이렇게도 말해요</span>
+              <span className="ml-auto text-xs text-muted-foreground font-normal">
+                {result.alternatives.length}가지 표현
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-4">
             {result.alternatives.map((alt, index) => (
-              <div key={index} className="border-l-2 border-primary/30 pl-3">
-                <p className="font-medium text-primary">{alt.expression}</p>
-                <p className="text-sm text-muted-foreground">{alt.situation}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  차이점: {alt.difference}
+              <div key={index} className="border-l-4 border-primary/40 pl-4 py-2 bg-muted/30 rounded-r-lg">
+                <p className="font-semibold text-lg text-primary">{alt.expression}</p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {alt.formality && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      formalityColors[alt.formality]
+                    }`}>
+                      {formalityLabels[alt.formality]}
+                    </span>
+                  )}
+                  {alt.targetAudience && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      👤 {alt.targetAudience}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  <span className="font-medium">상황:</span> {alt.situation}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">차이점:</span> {alt.difference}
                 </p>
               </div>
             ))}

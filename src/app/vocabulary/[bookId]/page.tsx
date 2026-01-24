@@ -27,7 +27,8 @@ interface VocabularyItem {
   book_id: string
   korean_expression: string
   english_expression: string
-  pronunciation_guide: string | null
+  target_audience: string | null
+  formality: 'casual' | 'neutral' | 'formal'
   context_explanation: string | null
   usage_examples: UsageExample[]
   alternatives: Alternative[]
@@ -266,15 +267,22 @@ export default function VocabularyBookPage({
               {/* Expanded Content */}
               {expandedItem === item.id && (
                 <div className="px-4 pb-4 border-t border-gray-100 pt-4">
-                  {/* Pronunciation */}
-                  {item.pronunciation_guide && (
-                    <div className="mb-3">
-                      <div className="text-xs text-gray-500 mb-1">발음 가이드</div>
-                      <div className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg">
-                        {item.pronunciation_guide}
-                      </div>
-                    </div>
-                  )}
+                  {/* 대상 & 격식 수준 */}
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      item.formality === 'casual' ? 'bg-green-100 text-green-700' :
+                      item.formality === 'formal' ? 'bg-purple-100 text-purple-700' :
+                      'bg-blue-100 text-blue-700'
+                    }`}>
+                      {item.formality === 'casual' ? '캐주얼' :
+                       item.formality === 'formal' ? '격식' : '중립'}
+                    </span>
+                    {item.target_audience && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        👤 {item.target_audience}
+                      </span>
+                    )}
+                  </div>
 
                   {/* Context */}
                   {item.context_explanation && (
