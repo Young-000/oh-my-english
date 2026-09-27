@@ -1,5 +1,9 @@
 # Vercel 배포 워크플로우
-# 이 파일을 프로젝트의 .github/workflows/ 에 복사해서 사용하세요
+# 이 저장소는 Vercel Git 연동이 연결돼 있지 않아 이 워크플로우가 유일한 자동 배포 경로다.
+# 필요한 secret: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID (저장소 소유자가 등록).
+# 반드시 Repository secret 으로 등록한다 — check-secrets 잡은 environment 를 쓰지 않아
+# preview/production Environment secret 은 보지 못한다.
+# 셋 중 하나라도 없으면 배포 잡은 실패 대신 skipped 로 끝나고 경고만 남긴다.
 
 name: Deploy to Vercel
 
@@ -14,11 +18,32 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
+  # secret은 잡 수준 if 에서 직접 읽을 수 없어 출력값으로 넘긴다
+  check-secrets:
+    name: Check Vercel Secrets
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: Check Vercel Secrets
+        id: check
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Vercel deploy skipped::VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID Repository secret이 없어 배포를 건너뜁니다. Settings → Secrets and variables → Actions → Repository secrets 에 등록하면 배포가 동작합니다 (Environment secret 은 인식하지 않음)."
+          fi
+
   # PR일 경우 프리뷰 배포
   deploy-preview:
     name: Deploy Preview
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    needs: check-secrets
+    if: github.event_name == 'pull_request' && needs.check-secrets.outputs.ready == 'true'
     environment:
       name: preview
       url: ${{ steps.deploy.outputs.url }}
@@ -63,7 +88,11 @@ jobs:
   deploy-production:
     name: Deploy Production
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: check-secrets
+    if: >-
+      needs.check-secrets.outputs.ready == 'true' &&
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     environment:
       name: production
       url: ${{ steps.deploy.outputs.url }}
