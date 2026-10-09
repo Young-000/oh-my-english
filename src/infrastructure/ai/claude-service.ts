@@ -19,7 +19,7 @@ export class ClaudeTranslationService implements ITranslationService {
     const response = await this.client.messages.create({
       model: 'claude-haiku-5-5',
       thinking: { type: 'disabled' },
-      max_tokens: 500,
+      max_tokens: 1000,
       messages: [
         {
           role: 'user',
@@ -50,7 +50,7 @@ export class ClaudeTranslationService implements ITranslationService {
     const stream = this.client.messages.stream({
       model: 'claude-haiku-5-5',
       thinking: { type: 'disabled' },
-      max_tokens: 500,
+      max_tokens: 1000,
       messages: [
         {
           role: 'user',

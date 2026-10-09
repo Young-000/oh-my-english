@@ -40,6 +40,7 @@ describe('ClaudeTranslationService', () => {
       const params = createMock.mock.calls[0][0]
       expect(params.model).toBe('claude-haiku-5-5')
       expect(params.thinking).toEqual({ type: 'disabled' })
+      expect(params.max_tokens).toBe(1000)
       expect(params).not.toHaveProperty('temperature')
       expect(params).not.toHaveProperty('top_p')
       expect(params).not.toHaveProperty('top_k')
@@ -76,6 +77,7 @@ describe('ClaudeTranslationService', () => {
       const params = streamMock.mock.calls[0][0]
       expect(params.model).toBe('claude-haiku-5-5')
       expect(params.thinking).toEqual({ type: 'disabled' })
+      expect(params.max_tokens).toBe(1000)
       expect(params).not.toHaveProperty('temperature')
       expect(params).not.toHaveProperty('top_p')
       expect(params).not.toHaveProperty('top_k')
