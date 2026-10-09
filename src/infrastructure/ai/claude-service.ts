@@ -17,8 +17,9 @@ export class ClaudeTranslationService implements ITranslationService {
     const userPrompt = createTranslationPrompt(request.koreanInput, request.context)
 
     const response = await this.client.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 500,
+      model: 'claude-haiku-5-5',
+      thinking: { type: 'disabled' },
+      max_tokens: 1000,
       messages: [
         {
           role: 'user',
@@ -28,9 +29,11 @@ export class ClaudeTranslationService implements ITranslationService {
       system: TRANSLATION_SYSTEM_PROMPT,
     })
 
-    const content = response.content[0];
-    if (content.type !== 'text') {
-      throw ParseError.unexpectedResponseType('text', content.type);
+    const content = response.content.find(
+      (block): block is Anthropic.TextBlock => block.type === 'text'
+    );
+    if (!content) {
+      throw ParseError.unexpectedResponseType('text', response.content[0]?.type ?? 'empty');
     }
 
     return this.parseResponse(content.text);
@@ -45,8 +48,9 @@ export class ClaudeTranslationService implements ITranslationService {
     const userPrompt = createTranslationPrompt(request.koreanInput, request.context)
 
     const stream = this.client.messages.stream({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 500,
+      model: 'claude-haiku-5-5',
+      thinking: { type: 'disabled' },
+      max_tokens: 1000,
       messages: [
         {
           role: 'user',
