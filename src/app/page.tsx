@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Sparkles, BookOpen, History, Brain, AlertCircle, Zap, Library } from 'lucide-react'
 import Link from 'next/link'
 import { useStreamingTranslation } from '@/presentation/hooks/useStreamingTranslation'
+import { trackAmplitude } from '@/infrastructure/analytics/amplitude'
 
 export default function Home() {
   const {
@@ -24,6 +25,7 @@ export default function Home() {
   } = useStreamingTranslation()
 
   const handleSubmit = async (koreanInput: string, context: TranslationContext) => {
+    trackAmplitude('translation_requested', { target: context.target, situation: context.situation })
     await translate(koreanInput, context)
   }
 

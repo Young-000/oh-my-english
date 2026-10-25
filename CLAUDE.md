@@ -11,6 +11,11 @@ AI 기반 영어 학습 서비스
 | **Schema** | `oh_my_english` |
 | **기술 스택** | Next.js + TypeScript |
 
+## 분석 (Amplitude)
+
+- `src/infrastructure/analytics/` — `NEXT_PUBLIC_AMPLITUDE_API_KEY` 빌드 시 주입(Vercel Production/Preview), 키 없으면 전송 없음 (봇·webdriver 제외)
+- 이벤트: translation_requested, quiz_completed, expression_saved (입력 문장·표현 본문은 보내지 않는다)
+
 ## 진행상황
 
 | 영역 | 상태 |

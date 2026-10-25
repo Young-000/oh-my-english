@@ -4,6 +4,7 @@ import './globals.css'
 import { Header } from '@/presentation/components/Header'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/presentation/components/ThemeProvider'
+import { AmplitudeInit } from '@/presentation/components/AmplitudeInit'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -56,6 +57,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <AmplitudeInit />
           <Header />
           {children}
           <Toaster position="bottom-center" />

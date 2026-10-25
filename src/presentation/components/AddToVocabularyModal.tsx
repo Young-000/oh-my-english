@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Plus, Check, Loader2 } from 'lucide-react'
+import { trackAmplitude } from '@/infrastructure/analytics/amplitude'
 
 interface VocabularyBook {
   id: string
@@ -100,6 +101,7 @@ export function AddToVocabularyModal({
 
     try {
       await onAdd(selectedBookId)
+      trackAmplitude('expression_saved')
       setSuccess(true)
       setTimeout(() => {
         onClose()

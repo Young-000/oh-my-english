@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { QuizSession, QuizResults, type SessionResult } from '@/presentation/components/QuizSession'
 import { Brain, Clock, Target, ArrowLeft, Play } from 'lucide-react'
+import { trackAmplitude } from '@/infrastructure/analytics/amplitude'
 import type { LearningRecord } from '@/domain/entities/translation'
 
 export default function QuizPage() {
@@ -45,6 +46,7 @@ export default function QuizPage() {
   }
 
   const handleComplete = (results: SessionResult[]) => {
+    trackAmplitude('quiz_completed', { question_count: results.length })
     setSessionResults(results)
     setSessionState('results')
   }
